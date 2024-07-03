@@ -15,6 +15,12 @@ List of Ports
 - Port 3306 (MySQL)
 - Port 22 (SSH Hostkey)
 - Port 23 (Telnet)
+- Port 8009 (Apache AJP)
+- Port 3389 (RDP)
+- Port 2049 (NFS)
+- Port 110 (Pop3)
+- Port 53 (DNS)
+  
 
 # Installation
 
@@ -23,4 +29,4 @@ List of Ports
 - chmod +x lazymap.sh
 
 # Usage
-./lazymap.sh [TARGETS]
+./lazymap.sh [HOSTS] _hosts file_
