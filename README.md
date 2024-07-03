@@ -1,6 +1,6 @@
 # lazymap
 
-A single command tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
+A single command line tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
 
 List of Ports
 - Port 139 and 445 (SMB)
