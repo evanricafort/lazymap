@@ -1,6 +1,20 @@
 # lazymap
 
-An easy single command tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
+A lazy single command tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
+
+List of Ports
+- Port 139 and 445 (SMB)
+- Port 443, 1443, 389, 3389 (SSL Cipher)
+- Port 137 (NetBIOS)
+- Port 1521 (Oracle TNS)
+- Port 123 (NTP)
+- Port 161 (SNMP)
+- Port 389, 636, 3268, 3269 (LDAP)
+- Port 80 (HTTP)
+- Port 111 (Portmapper)
+- Port 3306 (MySQL)
+- Port 22 (SSH Hostkey)
+- Port 23 (Telnet)
 
 # Installation
 
@@ -9,4 +23,4 @@ An easy single command tool equipped with NMAP scripts for Network Penetration T
 - chmod +x lazymap.sh
 
 # Usage
-./lazymap.sh -t <targets>
+./lazymap.sh [TARGETS]
