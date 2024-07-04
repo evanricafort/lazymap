@@ -41,6 +41,8 @@ declare -A scripts=(
   ["nfs.txt"]='nmap --script=nfs-ls,nfs-showmount,nfs-statfs -p 2049 -oN nfs.txt -v'
   ["rdpscript.txt"]='nmap --script rdp-enum-encryption,rdp-vuln-ms12-020,rdp-ntlm-info -p 3389 -T4 -oN rdpscript.txt -v'
   ["apacheajp.txt"]='nmap -sV --script ajp-auth,ajp-headers,ajp-methods,ajp-request -n -p 8009 -oN apacheajp.txt -v'
+  ["ftp.txt"]='nmap --script ftp-* -p 21 -oN ftp.txt -v'
+  ["tftp.txt"]='nmap -n -Pn -sU -p69 -sV --script tftp-enum -oN tftp.txt -v'
 )
 
 # Loop through each script and target combination
