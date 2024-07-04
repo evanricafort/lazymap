@@ -13,7 +13,7 @@ List of Ports
 - Port 80 (HTTP)
 - Port 111 (Portmapper)
 - Port 3306 (MySQL)
-- Port 22 (SSH Hostkey)
+- Port 22 (SSH)
 - Port 23 (Telnet)
 - Port 8009 (Apache AJP)
 - Port 3389 (RDP)
