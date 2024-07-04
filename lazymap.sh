@@ -44,6 +44,7 @@ if [[ -n "$targets_file" && ! -f "$targets_file" ]]; then
   exit 1
 elif [[ -z "$targets_file" && -z "$single_target" ]]; then
   echo "Error: No targets specified!"
+  echo "Usage: ./lazymap.sh -u target or ./lazymap.sh -t multipletarget.txt"
   exit 1
 fi
 
