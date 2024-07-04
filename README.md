@@ -30,4 +30,9 @@ List of Ports
 - chmod +x lazymap.sh
 
 # Usage
-./lazymap.sh (_hosts file_)
+
+Single Host
+- ./lazymap.sh -u _host_
+
+Multiple Hosts
+- ./lazymap.sh -t _hostsfile.txt_
