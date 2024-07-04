@@ -20,8 +20,9 @@ List of Ports
 - Port 2049 (NFS)
 - Port 110 (Pop3)
 - Port 53 (DNS)
+- Port 21 (FTP)
+- Port 69 (TFTP)
   
-
 # Installation
 
 - git clone https://github.com/evanricafort/lazymap.git
@@ -29,4 +30,4 @@ List of Ports
 - chmod +x lazymap.sh
 
 # Usage
-./lazymap.sh [HOSTS] _hosts file_
+./lazymap.sh (_hosts file_)
