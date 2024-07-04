@@ -1,6 +1,6 @@
 #!/bin/bash
 # Title: lazymap
-# Description: A single command line tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
+# Description: A single command tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
 # Author: Evan Ricafort - https://evanricafort.com
 
 # Function to check for script completion
@@ -27,7 +27,7 @@ declare -A scripts=(
   ["oraclesidbrute.txt"]='nmap --script oracle-sid-brute -p 1521 -T4 -sV -oN oraclesidbrute.txt -v'
   ["ntpservice.txt"]='nmap -sU -sV --script ntp-monlist,ntp-info -p 123 -oN ntpservice.txt -v'
   ["snmpinfodis.txt"]='nmap -sV --script snmp-brute -p161 -vvv -oN snmpinfodis.txt -v'
-  ["ldap.txt"]='nmap -n -sV --script ldap-search,ldap-novell-getpass and not brute --script-args="ldap*" -oN ldap.txt -v'
+  ["ldap.txt"]='nmap -n -sV --script ldap-search,ldap-novell-getpass and not brute --script-args="ldap*" -p 389,636,3268,3269 -oN ldap.txt -v'
   ["httpvuln80.txt"]='nmap -p80 --script http-vuln* -oN httpvuln80.txt -v'
   ["portmapper111.txt"]='nmap -sSUC -p111 -oN portmapper111.txt -v'
   ["mysql.txt"]='nmap -sV -p 3306 --script mysql-audit,mysql-databases,mysql-dump-hashes,mysql-empty-password,mysql-enum,mysql-info,mysql-query,mysql-users,mysql-variables,mysql-vuln-cve2012-2122 -oN mysql.txt -v'
@@ -36,7 +36,7 @@ declare -A scripts=(
   ["sshweakkeys.txt"]='nmap -p22 --script ssh-hostkey --script-args ssh_hostkey=full -oN sshweakkeys.txt -v'
   ["sshcheckauth.txt"]='nmap -p22 --script ssh-auth-methods --script-args="ssh.user=root" -oN sshcheckauth.txt -v'
   ["telnetservice.txt"]='nmap -n -sV -Pn --script telnet-brute,telnet-encryption -p 23 -oN telnetservice.txt -v'
-  ["dnsvuln.txt"]='nmap -n --script default,dns-fuzz,dns-brute,dns-cache-snoop -oN dnsvuln.txt -v'
+  ["dnsvuln.txt"]='nmap -n --script default,dns-fuzz,dns-brute,dns-cache-snoop -p 53 -oN dnsvuln.txt -v'
   ["pop3.txt"]='nmap --script pop3-capabilities,pop3-ntlm-info -sV -p 110 -oN pop3.txt -v'
   ["nfs.txt"]='nmap --script=nfs-ls,nfs-showmount,nfs-statfs -p 2049 -oN nfs.txt -v'
   ["rdpscript.txt"]='nmap --script rdp-enum-encryption,rdp-vuln-ms12-020,rdp-ntlm-info -p 3389 -T4 -oN rdpscript.txt -v'
