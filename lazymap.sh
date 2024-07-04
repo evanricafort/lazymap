@@ -19,7 +19,7 @@ fi
 
 # Define associative array for scripts
 declare -A scripts=(
-  ["smbsec1.txt"]='nmap -p445 --script smb-security-mode,smb2-security-mode -oN smbsec1.txt -v'
+  ["smbsec1.txt"]='nmap -p 139,445 --script smb-security-mode,smb2-security-mode -oN smbsec1.txt -v'
   ["smbsec2.txt"]='nmap -p 139,445 -vv -Pn --script=smb-vuln-cve2009-3103,smb-vuln-ms06-025,smb-vuln-ms07-029,smb-vuln-ms08-067,smb-vuln-ms10-054,smb-vuln-ms10-061,smb-vuln-ms17-010 -oN smbsec2.txt -v'
   ["sslcipher.txt"]='nmap --script ssl-enum-ciphers -p 443,1443,389,3389 -oN sslcipher.txt -v'
   ["netbiosinfodis.txt"]='nmap -sU -sV -T4 --script nbstat -p137 -Pn -n -oN netbiosinfodis.txt -v'
@@ -27,7 +27,7 @@ declare -A scripts=(
   ["oraclesidbrute.txt"]='nmap --script oracle-sid-brute -p 1521 -T4 -sV -oN oraclesidbrute.txt -v'
   ["ntpservice.txt"]='nmap -sU -sV --script ntp-monlist,ntp-info -p 123 -oN ntpservice.txt -v'
   ["snmpinfodis.txt"]='nmap -sV --script snmp-brute -p161 -vvv -oN snmpinfodis.txt -v'
-  ["ldap.txt"]='nmap -n -sV --script ldap-search,ldap-novell-getpass and not brute --script-args="ldap*" -p 389,636,3268,3269 -oN ldap.txt -v'
+  ["ldap.txt"]='nmap -n -sV --script ldap*,ldap-search,ldap-novell-getpass and not brute -p 389,636,3268,3269 -oN ldap.txt -v'
   ["httpvuln80.txt"]='nmap -p80 --script http-vuln* -oN httpvuln80.txt -v'
   ["portmapper111.txt"]='nmap -sSUC -p111 -oN portmapper111.txt -v'
   ["mysql.txt"]='nmap -sV -p 3306 --script mysql-audit,mysql-databases,mysql-dump-hashes,mysql-empty-password,mysql-enum,mysql-info,mysql-query,mysql-users,mysql-variables,mysql-vuln-cve2012-2122 -oN mysql.txt -v'
