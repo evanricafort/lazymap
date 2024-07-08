@@ -1,7 +1,8 @@
 #!/bin/bash
 # Title: lazymap
-# Description: A single command tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
+# Description: A single command-line tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
 # Author: Evan Ricafort - https://evanricafort.com
+# Additional Information: Added crackmapexec to scan and detect SMBv1 since most of the time when doing internal netpen, there are targets that are running SMB version 1.
 
 # Function to check for script completion
 function scan_complete() {
@@ -12,13 +13,22 @@ function scan_complete() {
 }
 
 # Check if options are provided
-while getopts ":t:u:" opt; do
+while getopts ":t:u:123" opt; do
   case ${opt} in
     t )
       targets_file=$OPTARG
       ;;
     u )
       single_target=$OPTARG
+      ;;
+    1 )
+      add_vulners=true
+      ;;
+    2 )
+      add_vuln=true
+      ;;
+    3 )
+      add_vuln_vulners=true
       ;;
     \? )
       echo "Invalid option: -$OPTARG" 1>&2
@@ -44,7 +54,9 @@ if [[ -n "$targets_file" && ! -f "$targets_file" ]]; then
   exit 1
 elif [[ -z "$targets_file" && -z "$single_target" ]]; then
   echo "Error: No targets specified!"
-  echo "Usage: ./lazymap.sh -u target or ./lazymap.sh -t multipletarget.txt"
+  echo "Usage: ./lazymap.sh -u target [Single Host] or ./lazymap.sh -t multipletarget.txt [Multiple Hosts]"
+  echo "Additional Options: Insert additional scripts with -1 for [vulners], -2 for [vuln] and -3 for both [vulners & vuln] NSE scripts."
+  echo "Reminder: Option -3 may take some time to finish if you have multiple targets."
   exit 1
 fi
 
@@ -74,7 +86,32 @@ declare -A scripts=(
   ["apacheajp.txt"]='nmap -sV --script ajp-auth,ajp-headers,ajp-methods,ajp-request -n -p 8009 -oN results/apacheajp.txt -v'
   ["ftp.txt"]='nmap --script ftp-* -p 21 -oN results/ftp.txt -v'
   ["tftp.txt"]='nmap -n -Pn -sU -p69 -sV --script tftp-enum -oN results/tftp.txt -v'
+  ["wildcardcert.txt"]='nmap --script ssl-cert -p443 -oN results/wildcardcert.txt -v'
+  ["tcp.txt"]='nmap -sC -sV -oN results/tcp.txt -v --reason'
+  ["udp.txt"]='nmap -sC -sU -oN results/udp.txt -v --reason'
+  ["allports.txt"]='nmap -p- -T4 -oN results/allports.txt -v --reason'
 )
+
+# Add vulners script if specified
+if [[ "$add_vulners" = true ]]; then
+  for key in "${!scripts[@]}"; do
+    scripts[$key]=${scripts[$key]/--script /--script vulners,}
+  done
+fi
+
+# Add vuln script if specified
+if [[ "$add_vuln" = true ]]; then
+  for key in "${!scripts[@]}"; do
+    scripts[$key]=${scripts[$key]/--script /--script vuln,}
+  done
+fi
+
+# Add vuln and vulners script if specified
+if [[ "$add_vuln_vulners" = true ]]; then
+  for key in "${!scripts[@]}"; do
+    scripts[$key]=${scripts[$key]/--script /--script vuln,vulners,}
+  done
+fi
 
 # Create results directory
 mkdir -p results
@@ -88,5 +125,15 @@ for output_file in "${!scripts[@]}"; do
   fi
   scan_complete "results/$output_file"
 done
+
+# Additional CrackMapExec command for SMBv1 detection
+if [[ -n "$targets_file" ]]; then
+  crackmapexec smb -p 445 "$targets_file" | grep SMBv1:True > results/smbv1.txt
+elif [[ -n "$single_target" ]]; then
+  echo "$single_target" > single_target.txt
+  crackmapexec smb -p 445 single_target.txt | grep SMBv1:True > results/smbv1.txt
+  rm single_target.txt
+fi
+
 
 echo "All scans completed! Output files are in the 'results' directory. Happy hacking!"
