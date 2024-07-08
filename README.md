@@ -2,6 +2,10 @@
 
 A single command-line tool equipped with NMAP scripts for network penetration testing that will scan and detect security issues on common ports.
 
+# Additional Information
+
+Added _crackmapexec_ to scan and detect SMBv1 since most of the time when doing internal netpen, there are targets that are running SMB version 1.
+
 List of Ports
 - Port 139 and 445 (SMB)
 - Port 443, 1443, 389, 3389 (SSL Cipher)
@@ -31,8 +35,6 @@ List of Ports
 
 # Usage
 
-Single Host
-- ./lazymap.sh -u _host_
-
-Multiple Hosts
-- ./lazymap.sh -t _hostsfile.txt_
+- Usage: ./lazymap.sh -u target _[Single Host]_ or ./lazymap.sh -t multipletarget.txt _[Multiple Hosts]_
+- Additional Options: Insert additional scripts with -1 for _[vulners]_, -2 for _[vuln]_ and -3 for both _[vulners & vuln]_ NSE scripts.
+- Reminder: Option -3 may take some time to finish if you have multiple targets.
