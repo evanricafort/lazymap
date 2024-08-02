@@ -38,4 +38,4 @@ git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmo
 
 - Usage: ./lazymap.sh -u target _[Single Host]_ or ./lazymap.sh -t multipletarget.txt _[Multiple Hosts]_
 - Additional Options: Insert additional scripts with option **-1** for _[vulners]_, **-2** for _[vuln]_, **-3** for both _[vulners & vuln]_ NSE scripts and **-4** for Firewall Evasion Scan.
-- Reminder: Option -3 may take some time to finish if you have multiple targets.
+- Reminder: Option **-3** may take some time to finish if you have multiple targets.
