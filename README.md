@@ -4,7 +4,8 @@ A single command-line tool equipped with NMAP scripts for network penetration te
 
 # Additional Information
 
-Added _crackmapexec_ to scan and detect SMBv1 since most of the time when doing internal netpen, there are targets that are running SMB version 1.
+Added _crackmapexec_ to scan and detect **SMBv1** since most of the time when doing internal netpen, there are targets that are running SMB version 1.
+Added _Firewall Evasion_ option to execute **firewall evasion scan** on the targets.
 
 List of Ports
 - Port 139 and 445 (SMB)
@@ -29,12 +30,12 @@ List of Ports
   
 # Installation
 
-- git clone https://github.com/evanricafort/lazymap.git
-- cd lazymap
-- chmod +x lazymap.sh
+```
+git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmod +x lazymap.sh && sudo ./lazymap.sh
+```
 
 # Usage
 
 - Usage: ./lazymap.sh -u target _[Single Host]_ or ./lazymap.sh -t multipletarget.txt _[Multiple Hosts]_
-- Additional Options: Insert additional scripts with option -1 for _[vulners]_, -2 for _[vuln]_ and -3 for both _[vulners & vuln]_ NSE scripts.
+- Additional Options: Insert additional scripts with option **-1** for _[vulners]_, **-2** for _[vuln]_, **-3** for both _[vulners & vuln]_ NSE scripts and **-4** for Firewall Evasion Scan.
 - Reminder: Option -3 may take some time to finish if you have multiple targets.
