@@ -13,7 +13,7 @@ function scan_complete() {
 }
 
 # Check if options are provided
-while getopts ":t:u:123" opt; do
+while getopts ":t:u:1234" opt; do
   case ${opt} in
     t )
       targets_file=$OPTARG
@@ -29,6 +29,9 @@ while getopts ":t:u:123" opt; do
       ;;
     3 )
       add_vuln_vulners=true
+      ;;
+    4 )
+      firewall_evasion=true
       ;;
     \? )
       echo "Invalid option: -$OPTARG" 1>&2
@@ -55,9 +58,53 @@ if [[ -n "$targets_file" && ! -f "$targets_file" ]]; then
 elif [[ -z "$targets_file" && -z "$single_target" ]]; then
   echo "Error: No targets specified!"
   echo "Usage: ./lazymap.sh -u target [Single Host] or ./lazymap.sh -t multipletarget.txt [Multiple Hosts]"
-  echo "Additional Options: Insert additional scripts with -1 for [vulners], -2 for [vuln] and -3 for both [vulners & vuln] NSE scripts."
+  echo "Additional Options: Insert additional scripts with -1 for [vulners], -2 for [vuln], -3 for both [vulners & vuln] NSE scripts and -4 for Firewall Evasion Scan."
   echo "Reminder: Option -3 may take some time to finish if you have multiple targets."
   exit 1
+fi
+
+# Define firewall evasion scripts
+declare -A firewall_evasion_scripts=(
+  ["fe_fragmentpacketsresult.txt"]='nmap -f -v --reason -oN results/firewarllevasion/fe_fragmentpacketsresult.txt'
+  ["fe_mturesult.txt"]='nmap -mtu 16 -v --reason -oN results/firewarllevasion/fe_mturesult.txt'
+  ["fe_macspoofappleresult.txt"]='nmap -sT -PO --spoof-mac Apple -Pn -v --reason -oN results/firewarllevasion/fe_macspoofappleresult.txt'
+  ["fe_macspoofciscoresult.txt"]='nmap -sT -PO --spoof-mac Cisco -Pn -v --reason -oN results/firewarllevasion/fe_macspoofciscoresult.txt'
+  ["fe_macspoofmicrosoftresult.txt"]='nmap -sT -PO --spoof-mac Microsoft -Pn -v --reason -oN results/firewarllevasion/fe_macspoofmicrosoftresult.txt'
+  ["fe_macspoofintelresult.txt"]='nmap -sT -PO --spoof-mac Intel -Pn -v --reason -oN results/firewarllevasion/fe_macspoofintelresult.txt'
+  ["fe_macspoofsamsungresult.txt"]='nmap -sT -PO --spoof-mac Samsung -Pn -v --reason -oN results/firewarllevasion/fe_macspoofsamsungresult.txt'
+  ["fe_macspoofdellresult.txt"]='nmap -sT -PO --spoof-mac Dell -Pn -v --reason -oN results/firewarllevasion/fe_macspoofdellresult.txt'
+  ["fe_macspoofhpresult.txt"]='nmap -sT -PO --spoof-mac HP -Pn -v --reason -oN results/firewarllevasion/fe_macspoofhpresult.txt'
+  ["fe_macspoofsonyresult.txt"]='nmap -sT -PO --spoof-mac Sony -Pn -v --reason -oN results/firewarllevasion/fe_macspoofsonyresult.txt'
+  ["fe_macspoofnetgearresult.txt"]='nmap -sT -PO --spoof-mac Netgear -Pn -v --reason -oN results/firewarllevasion/fe_macspoofnetgearresult.txt'
+  ["fe_macspooftplinkresult.txt"]='nmap -sT -PO --spoof-mac TP-Link -Pn -v --reason -oN results/firewarllevasion/fe_macspooftplinkresult.txt'
+  ["fe_macspoofasusresult.txt"]='nmap -sT -PO --spoof-mac ASUS -Pn -v --reason -oN results/firewarllevasion/fe_macspoofasusresult.txt'
+  ["fe_macspoofjuniperresult.txt"]='nmap -sT -PO --spoof-mac Juniper -Pn -v --reason -oN results/firewarllevasion/fe_macspoofjuniperresult.txt'
+  ["fe_macspoofbroadcomresult.txt"]='nmap -sT -PO --spoof-mac Broadcom -Pn -v --reason -oN results/firewarllevasion/fe_macspoofbroadcomresult.txt'
+  ["fe_macspoofqualcommresult.txt"]='nmap -sT -PO --spoof-mac Qualcomm -Pn -v --reason -oN results/firewarllevasion/fe_macspoofqualcommresult.txt'
+  ["fe_badchecksumresult.txt"]='nmap --badsum -v --reason -oN results/firewarllevasion/fe_badchecksumresult.txt'
+  ["fe_exoticflagresult.txt"]='nmap -sF -p1-100 -T4 -v --reason -oN results/firewarllevasion/fe_exoticflagresult.txt'
+  ["fe_sourceportcheckresult.txt"]='nmap -sS -v -v -Pn -v --reason -oN results/firewarllevasion/fe_sourceportcheckresult.txt'
+  ["fe_sourceportresult.txt"]='nmap -g -Pn -v --reason -oN results/firewarllevasion/fe_sourceportresult.txt'
+  ["fe_icpmechorequestresult.txt"]='nmap -n -sn -PE -T4 -v --reason -oN results/firewarllevasion/fe_icpmechorequestresult.txt'
+  ["fe_packettracceresult.txt"]='nmap -vv -n -sn -PE -T4 --packet-trace -v --reason -oN results/firewarllevasion/fe_packettracceresult.txt'
+)
+
+# Create results directory
+mkdir -p results
+mkdir -p results/firewarllevasion
+
+# Check if only firewall evasion scans are needed
+if [[ "$firewall_evasion" = true ]]; then
+  for output_file in "${!firewall_evasion_scripts[@]}"; do
+    if [[ -n "$targets_file" ]]; then
+      ${firewall_evasion_scripts[$output_file]} -iL "$targets_file"
+    elif [[ -n "$single_target" ]]; then
+      ${firewall_evasion_scripts[$output_file]} "$single_target"
+    fi
+    scan_complete "results/firewarllevasion/$output_file"
+  done
+  echo "Firewall evasion scans completed! Output files are in the 'firewarllevasion' directory."
+  exit 0
 fi
 
 # Define associative array for scripts
@@ -113,9 +160,6 @@ if [[ "$add_vuln_vulners" = true ]]; then
   done
 fi
 
-# Create results directory
-mkdir -p results
-
 # Loop through each script and target combination
 for output_file in "${!scripts[@]}"; do
   if [[ -n "$targets_file" ]]; then
@@ -134,6 +178,5 @@ elif [[ -n "$single_target" ]]; then
   crackmapexec smb -p 445 single_target.txt | grep SMBv1:True > results/smbv1.txt
   rm single_target.txt
 fi
-
 
 echo "All scans completed! Output files are in the 'results' directory. Happy hacking!"
