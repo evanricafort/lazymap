@@ -27,6 +27,7 @@ List of Ports
 - Port 53 (DNS)
 - Port 21 (FTP)
 - Port 69 (TFTP)
+- Port 25,465,587 (SMTP)
   
 # Installation
 
