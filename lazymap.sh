@@ -1,7 +1,7 @@
 #!/bin/bash
 # Title: lazymap
 # Description: A single command-line tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
-# Author: Evan Ricafort - https://evanricafort.com
+# Author: Evan Ricafort - https://evanricafort.com | X: @evanricafort
 # Additional Information: Added crackmapexec to scan and detect SMBv1 since most of the time when doing internal netpen, there are targets that are running SMB version 1.
 
 # Function to check for script completion
