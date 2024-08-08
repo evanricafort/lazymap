@@ -1,8 +1,8 @@
 #!/bin/bash
 # Title: lazymap
-# Description: A single command-line tool equipped with NMAP scripts for Network Penetration Testing that will scan and detect security issues on common ports.
+# Description: A single command-line tool to execute multiple NMAP script for network penetration testing that will scan and detect security issues on common ports.
 # Author: Evan Ricafort - https://evanricafort.com | X: @evanricafort
-# Additional Information: Added crackmapexec to scan and detect SMBv1 since most of the time when doing internal netpen, there are targets that are running SMB version 1.
+# Additional Information: Added crackmapexec to scan and detect SMBv1.
 
 # Function to check for script completion
 function scan_complete() {
@@ -134,6 +134,7 @@ declare -A scripts=(
   ["ftp.txt"]='nmap --script ftp-* -p 21 -oN results/ftp.txt -v'
   ["tftp.txt"]='nmap -n -Pn -sU -p69 -sV --script tftp-enum -oN results/tftp.txt -v'
   ["wildcardcert.txt"]='nmap --script ssl-cert -p443 -oN results/wildcardcert.txt -v'
+  ["smtp.txt"]='nmap --script smtp-commands,smtp-open-relay,smtp-enum-users -p 25,465,587 -oN results/smtp.txt -v'
   ["tcp.txt"]='nmap -sC -sV -oN results/tcp.txt -v --reason'
   ["udp.txt"]='nmap -sC -sU -oN results/udp.txt -v --reason'
   ["allports.txt"]='nmap -p- -T4 -oN results/allports.txt -v --reason'
