@@ -65,28 +65,28 @@ fi
 
 # Define firewall evasion scripts
 declare -A firewall_evasion_scripts=(
-  ["fe_fragmentpacketsresult.txt"]='nmap -f -v --reason -oN results/firewarllevasion/fe_fragmentpacketsresult.txt'
-  ["fe_mturesult.txt"]='nmap -mtu 16 -v --reason -oN results/firewarllevasion/fe_mturesult.txt'
-  ["fe_macspoofappleresult.txt"]='nmap -sT -PO --spoof-mac Apple -Pn -v --reason -oN results/firewarllevasion/fe_macspoofappleresult.txt'
-  ["fe_macspoofciscoresult.txt"]='nmap -sT -PO --spoof-mac Cisco -Pn -v --reason -oN results/firewarllevasion/fe_macspoofciscoresult.txt'
-  ["fe_macspoofmicrosoftresult.txt"]='nmap -sT -PO --spoof-mac Microsoft -Pn -v --reason -oN results/firewarllevasion/fe_macspoofmicrosoftresult.txt'
-  ["fe_macspoofintelresult.txt"]='nmap -sT -PO --spoof-mac Intel -Pn -v --reason -oN results/firewarllevasion/fe_macspoofintelresult.txt'
-  ["fe_macspoofsamsungresult.txt"]='nmap -sT -PO --spoof-mac Samsung -Pn -v --reason -oN results/firewarllevasion/fe_macspoofsamsungresult.txt'
-  ["fe_macspoofdellresult.txt"]='nmap -sT -PO --spoof-mac Dell -Pn -v --reason -oN results/firewarllevasion/fe_macspoofdellresult.txt'
-  ["fe_macspoofhpresult.txt"]='nmap -sT -PO --spoof-mac HP -Pn -v --reason -oN results/firewarllevasion/fe_macspoofhpresult.txt'
-  ["fe_macspoofsonyresult.txt"]='nmap -sT -PO --spoof-mac Sony -Pn -v --reason -oN results/firewarllevasion/fe_macspoofsonyresult.txt'
-  ["fe_macspoofnetgearresult.txt"]='nmap -sT -PO --spoof-mac Netgear -Pn -v --reason -oN results/firewarllevasion/fe_macspoofnetgearresult.txt'
-  ["fe_macspooftplinkresult.txt"]='nmap -sT -PO --spoof-mac TP-Link -Pn -v --reason -oN results/firewarllevasion/fe_macspooftplinkresult.txt'
-  ["fe_macspoofasusresult.txt"]='nmap -sT -PO --spoof-mac ASUS -Pn -v --reason -oN results/firewarllevasion/fe_macspoofasusresult.txt'
-  ["fe_macspoofjuniperresult.txt"]='nmap -sT -PO --spoof-mac Juniper -Pn -v --reason -oN results/firewarllevasion/fe_macspoofjuniperresult.txt'
-  ["fe_macspoofbroadcomresult.txt"]='nmap -sT -PO --spoof-mac Broadcom -Pn -v --reason -oN results/firewarllevasion/fe_macspoofbroadcomresult.txt'
-  ["fe_macspoofqualcommresult.txt"]='nmap -sT -PO --spoof-mac Qualcomm -Pn -v --reason -oN results/firewarllevasion/fe_macspoofqualcommresult.txt'
-  ["fe_badchecksumresult.txt"]='nmap --badsum -v --reason -oN results/firewarllevasion/fe_badchecksumresult.txt'
-  ["fe_exoticflagresult.txt"]='nmap -sF -p1-100 -T4 -v --reason -oN results/firewarllevasion/fe_exoticflagresult.txt'
-  ["fe_sourceportcheckresult.txt"]='nmap -sS -v -v -Pn -v --reason -oN results/firewarllevasion/fe_sourceportcheckresult.txt'
-  ["fe_sourceportresult.txt"]='nmap -g -Pn -v --reason -oN results/firewarllevasion/fe_sourceportresult.txt'
-  ["fe_icpmechorequestresult.txt"]='nmap -n -sn -PE -T4 -v --reason -oN results/firewarllevasion/fe_icpmechorequestresult.txt'
-  ["fe_packettracceresult.txt"]='nmap -vv -n -sn -PE -T4 --packet-trace -v --reason -oN results/firewarllevasion/fe_packettracceresult.txt'
+    ["fe_fragmentpacketsresult.txt"]='nmap -f -v --reason -oN results/firewarllevasion/fe_fragmentpacketsresult.txt'
+    ["fe_mturesult.txt"]='nmap -mtu 16 -v --reason -oN results/firewarllevasion/fe_mturesult.txt'
+    ["fe_macspoofappleresult.txt"]='nmap -sT -PO --spoof-mac Apple -Pn -v --reason -oN results/firewarllevasion/fe_macspoofappleresult.txt'
+    ["fe_macspoofciscoresult.txt"]='nmap -sT -PO --spoof-mac Cisco -Pn -v --reason -oN results/firewarllevasion/fe_macspoofciscoresult.txt'
+    ["fe_macspoofmicrosoftresult.txt"]='nmap -sT -PO --spoof-mac Microsoft -Pn -v --reason -oN results/firewarllevasion/fe_macspoofmicrosoftresult.txt'
+    ["fe_macspoofintelresult.txt"]='nmap -sT -PO --spoof-mac Intel -Pn -v --reason -oN results/firewarllevasion/fe_macspoofintelresult.txt'
+    ["fe_macspoofsamsungresult.txt"]='nmap -sT -PO --spoof-mac Samsung -Pn -v --reason -oN results/firewarllevasion/fe_macspoofsamsungresult.txt'
+    ["fe_macspoofdellresult.txt"]='nmap -sT -PO --spoof-mac Dell -Pn -v --reason -oN results/firewarllevasion/fe_macspoofdellresult.txt'
+    ["fe_macspoofhpresult.txt"]='nmap -sT -PO --spoof-mac HP -Pn -v --reason -oN results/firewarllevasion/fe_macspoofhpresult.txt'
+    ["fe_macspoofsonyresult.txt"]='nmap -sT -PO --spoof-mac Sony -Pn -v --reason -oN results/firewarllevasion/fe_macspoofsonyresult.txt'
+    ["fe_macspoofnetgearresult.txt"]='nmap -sT -PO --spoof-mac Netgear -Pn -v --reason -oN results/firewarllevasion/fe_macspoofnetgearresult.txt'
+    ["fe_macspooftplinkresult.txt"]='nmap -sT -PO --spoof-mac TP-Link -Pn -v --reason -oN results/firewarllevasion/fe_macspooftplinkresult.txt'
+    ["fe_macspoofasusresult.txt"]='nmap -sT -PO --spoof-mac ASUS -Pn -v --reason -oN results/firewarllevasion/fe_macspoofasusresult.txt'
+    ["fe_macspoofjuniperresult.txt"]='nmap -sT -PO --spoof-mac Juniper -Pn -v --reason -oN results/firewarllevasion/fe_macspoofjuniperresult.txt'
+    ["fe_macspoofbroadcomresult.txt"]='nmap -sT -PO --spoof-mac Broadcom -Pn -v --reason -oN results/firewarllevasion/fe_macspoofbroadcomresult.txt'
+    ["fe_macspoofqualcommresult.txt"]='nmap -sT -PO --spoof-mac Qualcomm -Pn -v --reason -oN results/firewarllevasion/fe_macspoofqualcommresult.txt'
+    ["fe_badchecksumresult.txt"]='nmap --badsum -v --reason -oN results/firewarllevasion/fe_badchecksumresult.txt'
+    ["fe_exoticflagresult.txt"]='nmap -sF -p1-100 -T4 -v --reason -oN results/firewarllevasion/fe_exoticflagresult.txt'
+    ["fe_sourceportcheckresult.txt"]='nmap -sS -v -v -Pn -v --reason -oN results/firewarllevasion/fe_sourceportcheckresult.txt'
+    ["fe_sourceportresult.txt"]='nmap -g -Pn -v --reason -oN results/firewarllevasion/fe_sourceportresult.txt'
+    ["fe_icpmechorequestresult.txt"]='nmap -n -sn -PE -T4 -v --reason -oN results/firewarllevasion/fe_icpmechorequestresult.txt'
+    ["fe_packettracceresult.txt"]='nmap -vv -n -sn -PE -T4 --packet-trace -v --reason -oN results/firewarllevasion/fe_packettracceresult.txt'
 )
 
 # Create results directory
@@ -109,36 +109,39 @@ fi
 
 # Define associative array for scripts
 declare -A scripts=(
-  ["smbsec1.txt"]='nmap -p 139,445 --script smb-security-mode,smb2-security-mode -oN results/smbsec1.txt -v'
-  ["smbsec2.txt"]='nmap -p 139,445 -vv -Pn --script=smb-vuln-cve2009-3103,smb-vuln-ms06-025,smb-vuln-ms07-029,smb-vuln-ms08-067,smb-vuln-ms10-054,smb-vuln-ms10-061,smb-vuln-ms17-010 -oN results/smbsec2.txt -v'
-  ["sslcipher.txt"]='nmap --script ssl-enum-ciphers -p 443,1443,389,3389 -oN results/sslcipher.txt -v'
-  ["netbiosinfodis.txt"]='nmap -sU -sV -T4 --script nbstat -p137 -Pn -n -oN results/netbiosinfodis.txt -v'
-  ["oracletnsversion.txt"]='nmap --script oracle-tns-version -p 1521 -T4 -sV -oN results/oracletnsversion.txt -v'
-  ["oraclesidbrute.txt"]='nmap --script oracle-sid-brute -p 1521 -T4 -sV -oN results/oraclesidbrute.txt -v'
-  ["ntpservice.txt"]='nmap -sU -sV --script ntp-monlist,ntp-info -p 123 -oN results/ntpservice.txt -v'
-  ["snmpinfodis.txt"]='nmap -sV --script snmp-brute -p161 -vvv -oN results/snmpinfodis.txt -v'
-  ["ldap.txt"]='nmap -n -sV --script ldap*,ldap-search,ldap-novell-getpass -p 389,636,3268,3269 -oN results/ldap.txt -v'
-  ["httpvuln80.txt"]='nmap -p80 --script http-vuln* -oN results/httpvuln80.txt -v'
-  ["portmapper111.txt"]='nmap -sSUC -p111 -oN results/portmapper111.txt -v'
-  ["mysql.txt"]='nmap -sV -p 3306 --script mysql-audit,mysql-databases,mysql-dump-hashes,mysql-empty-password,mysql-enum,mysql-info,mysql-query,mysql-users,mysql-variables,mysql-vuln-cve2012-2122 -oN results/mysql.txt -v'
-  ["mssql.txt"]='nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=sa,mssql.password=,mssql.instance-name=MSSQLSERVER -sV -p 1433 -oN results/mssql.txt -v'
-  ["sshenumalgos.txt"]='nmap -p22 --script ssh2-enum-algos -oN results/sshenumalgos.txt -v'
-  ["sshweakkeys.txt"]='nmap -p22 --script ssh-hostkey --script-args ssh_hostkey=full -oN results/sshweakkeys.txt -v'
-  ["sshcheckauth.txt"]='nmap -p22 --script ssh-auth-methods --script-args="ssh.user=root" -oN results/sshcheckauth.txt -v'
-  ["telnetservice.txt"]='nmap -n -sV -Pn --script telnet-brute,telnet-encryption -p 23 -oN results/telnetservice.txt -v'
-  ["dnsvuln.txt"]='nmap -n --script default,dns-fuzz,dns-brute,dns-cache-snoop -p 53 -oN results/dnsvuln.txt -v'
-  ["pop3.txt"]='nmap --script pop3-capabilities,pop3-ntlm-info -sV -p 110 -oN results/pop3.txt -v'
-  ["nfs.txt"]='nmap --script=nfs-ls,nfs-showmount,nfs-statfs -p 2049 -oN results/nfs.txt -v'
-  ["rdpscript.txt"]='nmap --script rdp-enum-encryption,rdp-vuln-ms12-020,rdp-ntlm-info -p 3389 -T4 -oN results/rdpscript.txt -v'
-  ["apacheajp.txt"]='nmap -sV --script ajp-auth,ajp-headers,ajp-methods,ajp-request -n -p 8009 -oN results/apacheajp.txt -v'
-  ["ftp.txt"]='nmap --script ftp-* -p 21 -oN results/ftp.txt -v'
-  ["tftp.txt"]='nmap -n -Pn -sU -p69 -sV --script tftp-enum -oN results/tftp.txt -v'
-  ["wildcardcert.txt"]='nmap --script ssl-cert -p443 -oN results/wildcardcert.txt -v'
-  ["smtp.txt"]='nmap --script smtp-commands,smtp-open-relay,smtp-enum-users -p 25,465,587 -oN results/smtp.txt -v'
-  ["tcp.txt"]='nmap -sC -sV -oN results/tcp.txt -v --reason'
-  ["udp.txt"]='nmap -sC -sU -oN results/udp.txt -v --reason'
-  ["allports.txt"]='nmap -p- -T4 -oN results/allports.txt -v --reason'
+    ["smbsec1.txt"]='nmap -p 139,445 --script smb-security-mode,smb2-security-mode -oN results/smbsec1.txt -v'
+    ["smbsec2.txt"]='nmap -p 139,445 -vv -Pn --script=smb-vuln-cve2009-3103,smb-vuln-ms06-025,smb-vuln-ms07-029,smb-vuln-ms08-067,smb-vuln-ms10-054,smb-vuln-ms10-061,smb-vuln-ms17-010 -oN results/smbsec2.txt -v'
+    ["sslcipher.txt"]='nmap --script ssl-enum-ciphers -p 443,1443,389,3389 -oN results/sslcipher.txt -v'
+    ["netbiosinfodis.txt"]='nmap -sU -sV -T4 --script nbstat -p137 -Pn -n -oN results/netbiosinfodis.txt -v'
+    ["oracletnsversion.txt"]='nmap --script oracle-tns-version -p 1521 -T4 -sV -oN results/oracletnsversion.txt -v'
+    ["oraclesidbrute.txt"]='nmap --script oracle-sid-brute -p 1521 -T4 -sV -oN results/oraclesidbrute.txt -v'
+    ["ntpservice.txt"]='nmap -sU -sV --script ntp-monlist,ntp-info -p 123 -oN results/ntpservice.txt -v'
+    ["snmpinfodis.txt"]='nmap -sV --script snmp-brute -p161 -vvv -oN results/snmpinfodis.txt -v'
+    ["ldap.txt"]='nmap -n -sV --script ldap*,ldap-search,ldap-novell-getpass -p 389,636,3268,3269 -oN results/ldap.txt -v'
+    ["httpvuln80.txt"]='nmap -p80 --script http-vuln* -oN results/httpvuln80.txt -v'
+    ["portmapper111.txt"]='nmap -sSUC -p111 -oN results/portmapper111.txt -v'
+    ["mysql.txt"]='nmap -sV -p 3306 --script mysql-audit,mysql-databases,mysql-dump-hashes,mysql-empty-password,mysql-enum,mysql-info,mysql-query,mysql-users,mysql-variables,mysql-vuln-cve2012-2122 -oN results/mysql.txt -v'
+    ["mssql.txt"]='nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=sa,mssql.password=,mssql.instance-name=MSSQLSERVER -sV -p 1433 -oN results/mssql.txt -v'
+    ["sshenumalgos.txt"]='nmap -p22 --script ssh2-enum-algos -oN results/sshenumalgos.txt -v'
+    ["sshweakkeys.txt"]='nmap -p22 --script ssh-hostkey --script-args ssh_hostkey=full -oN results/sshweakkeys.txt -v'
+    ["sshcheckauth.txt"]='nmap -p22 --script ssh-auth-methods --script-args="ssh.user=root" -oN results/sshcheckauth.txt -v'
+    ["telnetservice.txt"]='nmap -n -sV -Pn --script telnet-brute,telnet-encryption -p 23 -oN results/telnetservice.txt -v'
+    ["dnsvuln.txt"]='nmap -n --script default,dns-fuzz,dns-brute,dns-cache-snoop -p 53 -oN results/dnsvuln.txt -v'
+    ["pop3.txt"]='nmap --script pop3-capabilities,pop3-ntlm-info -sV -p 110 -oN results/pop3.txt -v'
+    ["nfs.txt"]='nmap --script=nfs-ls,nfs-showmount,nfs-statfs -p 2049 -oN results/nfs.txt -v'
+    ["rdpscript.txt"]='nmap --script rdp-enum-encryption,rdp-vuln-ms12-020,rdp-ntlm-info -p 3389 -T4 -oN results/rdpscript.txt -v'
+    ["apacheajp.txt"]='nmap -sV --script ajp-auth,ajp-headers,ajp-methods,ajp-request -n -p 8009 -oN results/apacheajp.txt -v'
+    ["ftp.txt"]='nmap --script ftp-* -p 21 -oN results/ftp.txt -v'
+    ["tftp.txt"]='nmap -n -Pn -sU -p69 -sV --script tftp-enum -oN results/tftp.txt -v'
+    ["wildcardcert.txt"]='nmap --script ssl-cert -p443 -oN results/wildcardcert.txt -v'
+    ["smtp.txt"]='nmap --script smtp-commands,smtp-open-relay,smtp-enum-users -p 25,465,587 -oN results/smtp.txt -v'
+    ["tcp.txt"]='nmap -sC -sV -oN results/tcp.txt -v --reason'
+    ["udp.txt"]='nmap -sC -sU -oN results/udp.txt -v --reason'
+    ["allports.txt"]='nmap -p- -T4 -oN results/allports.txt -v --reason'
 )
+
+# Specify the order in which the scripts should be executed
+ordered_scripts=("smbsec1.txt" "smbsec2.txt" "sslcipher.txt" "netbiosinfodis.txt" "oracletnsversion.txt" "oraclesidbrute.txt" "ntpservice.txt" "snmpinfodis.txt" "ldap.txt" "httpvuln80.txt" "portmapper111.txt" "mysql.txt" "mssql.txt" "sshenumalgos.txt" "sshweakkeys.txt" "sshcheckauth.txt" "telnetservice.txt" "dnsvuln.txt" "pop3.txt" "nfs.txt" "rdpscript.txt" "apacheajp.txt" "ftp.txt" "tftp.txt" "wildcardcert.txt" "smtp.txt" "tcp.txt" "udp.txt" "allports.txt")
 
 # Add vulners script if specified
 if [[ "$add_vulners" = true ]]; then
@@ -156,13 +159,13 @@ fi
 
 # Add vuln and vulners script if specified
 if [[ "$add_vuln_vulners" = true ]]; then
-  for key in "${!scripts[@]}"; do
+  for key in "${!scripts[@]}"]; do
     scripts[$key]=${scripts[$key]/--script /--script vuln,vulners,}
   done
 fi
 
-# Loop through each script and target combination
-for output_file in "${!scripts[@]}"; do
+# Loop through each script in the specified order
+for output_file in "${ordered_scripts[@]}"; do
   if [[ -n "$targets_file" ]]; then
     ${scripts[$output_file]} -iL "$targets_file"
   elif [[ -n "$single_target" ]]; then
