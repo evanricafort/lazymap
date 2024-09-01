@@ -13,7 +13,7 @@ function scan_complete() {
 }
 
 # Check if options are provided
-while getopts ":t:u:1234" opt; do
+while getopts ":t:u:1234ap" opt; do
   case ${opt} in
     t )
       targets_file=$OPTARG
@@ -32,6 +32,9 @@ while getopts ":t:u:1234" opt; do
       ;;
     4 )
       firewall_evasion=true
+      ;;
+    ap )
+      exclude_allports=true
       ;;
     \? )
       echo "Invalid option: -$OPTARG" 1>&2
@@ -58,7 +61,7 @@ if [[ -n "$targets_file" && ! -f "$targets_file" ]]; then
 elif [[ -z "$targets_file" && -z "$single_target" ]]; then
   echo "Error: No targets specified!"
   echo "Usage: ./lazymap.sh -u target [Single Host] or ./lazymap.sh -t multipletarget.txt [Multiple Hosts]"
-  echo "Additional Options: Insert additional scripts with -1 for [vulners], -2 for [vuln], -3 for both [vulners & vuln] NSE scripts and -4 for Firewall Evasion Scan."
+  echo "Additional Options: Insert additional scripts with -1 for [vulners], -2 for [vuln], -3 for both [vulners & vuln] NSE scripts, -4 for Firewall Evasion Scan and -ap if you want to exclude all port scan script."
   echo "Reminder: Option -3 may take some time to finish if you have multiple targets."
   exit 1
 fi
@@ -142,6 +145,11 @@ declare -A scripts=(
 
 # Specify the order in which the scripts should be executed
 ordered_scripts=("smbsec1.txt" "smbsec2.txt" "sslcipher.txt" "netbiosinfodis.txt" "oracletnsversion.txt" "oraclesidbrute.txt" "ntpservice.txt" "snmpinfodis.txt" "ldap.txt" "httpvuln80.txt" "portmapper111.txt" "mysql.txt" "mssql.txt" "sshenumalgos.txt" "sshweakkeys.txt" "sshcheckauth.txt" "telnetservice.txt" "dnsvuln.txt" "pop3.txt" "nfs.txt" "rdpscript.txt" "apacheajp.txt" "ftp.txt" "tftp.txt" "wildcardcert.txt" "smtp.txt" "tcp.txt" "udp.txt" "allports.txt")
+
+# Exclude allports script if -ap is specified
+if [[ "$exclude_allports" = true ]]; then
+  ordered_scripts=("${ordered_scripts[@]/allports.txt}")
+fi
 
 # Add vulners script if specified
 if [[ "$add_vulners" = true ]]; then
