@@ -7,6 +7,7 @@ A single command-line tool to execute multiple NMAP script for network penetrati
 * Added _crackmapexec_ to scan and detect **SMBv1** since most of the time when doing internal netpen, there are targets that are running SMB version 1.
 * Added _Firewall Evasion_ option to execute **firewall evasion scan** on the targets.
 * Added changes which will scan the _-A scripts_ list in specific order instead of random loop to avoid hang time.
+* Added changes which will exclude all port scan using _-ap_ command.
 
 List of Ports
 - Port 139 and 445 (SMB)
