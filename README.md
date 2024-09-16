@@ -1,6 +1,6 @@
 # lazymap
 
-A single command-line tool to execute multiple NMAP script for network penetration testing that will scan and detect security issues on common ports.
+A single command-line mapping tool to execute multiple NMAP script for network penetration testing that will scan and detect security issues on common ports.
 
 # Additional Information
 
