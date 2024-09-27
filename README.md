@@ -1,13 +1,20 @@
 # lazymap
 
-A single command-line mapping tool to execute multiple NMAP script for network penetration testing that will scan and detect security issues on common ports.
+Lazymap is a single command-line tool made for network penetration testing. It is composed of multiple selected NMAP scripts, sslscan, ssh-audit, selected metasploit modules, and an HTTP header security checker.
 
 # Additional Information
 
 * Added _crackmapexec_ to scan and detect **SMBv1** since most of the time when doing internal netpen, there are targets that are running SMB version 1.
 * Added _Firewall Evasion_ option to execute **firewall evasion scan** on the targets.
-* Added changes which will scan the _-A scripts_ list in specific order instead of random loop to avoid hang time.
-* Added changes which will exclude all port scan using _-ap_ command.
+* Added changes that will scan the _-A scripts_ list in a specific order instead of a random loop to avoid hang time.
+* Added changes that will exclude all port and udp scans using the _-ap_ command.
+* Added sslscan for additional POC for ssl-related issues.
+* Added ssh-audit for additional POC for ssh-related issues.
+* Added 2 Metasploit modules to scan RDP and RPC issues.
+* Merged my 2nd personal project, **CheckThatHeaders**, which scans and detects missing HTTP security header issues.
+* Added a feature to determine if the target is within the subnet or individual IP to relay the result without issue for sslscan, ssh-audit and checkthatheaders.
+* Added a not so fancy ascii art for the banner.
+* Improved verbose and scan outputs.
 
 List of Ports
 - Port 139 and 445 (SMB)
@@ -30,11 +37,21 @@ List of Ports
 - Port 21 (FTP)
 - Port 69 (TFTP)
 - Port 25,465,587 (SMTP)
+- Port 623 (IPMI)
+- Port 143 and 993 (IMAP)
+- Port 500 (IKE)
+- Port 548 (AFP)
+- Port 70 (Gopher)
+- Port 88 (Kerberos)
+- Port 6379 (Redis)
+- Port 5900 (VNC)
+- Port 5060 (SIP)
+- Port 
   
 # Installation
 
 ```
-git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmod +x lazymap.sh && sudo ./lazymap.sh
+git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmod +x lazymap.sh && sudo ./lazymap.sh -h
 ```
 
 # Usage
@@ -42,3 +59,4 @@ git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmo
 - Usage: ./lazymap.sh -u target _[Single Host]_ or ./lazymap.sh -t multipletarget.txt _[Multiple Hosts]_
 - Additional Options: Insert additional scripts with option **-1** for _[vulners]_, **-2** for _[vuln]_, **-3** for both _[vulners & vuln]_ NSE scripts, **-4** for Firewall Evasion Scan and **-ap** if you want to exclude all port scan.
 - Reminder: Option **-3** may take some time to finish if you have multiple targets.
+- Note: Run in sudo mode to execute NMAP scripts related to UDP scan.
