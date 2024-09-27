@@ -46,7 +46,6 @@ List of Ports
 - Port 6379 (Redis)
 - Port 5900 (VNC)
 - Port 5060 (SIP)
-- Port 
   
 # Installation
 
