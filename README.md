@@ -1,3 +1,5 @@
+<img width="1440" alt="Screenshot 2024-09-27 at 3 21 12 PM" src="https://github.com/user-attachments/assets/ad01a031-adcb-4e3f-99cf-abf7cf52784b">
+
 # lazymap
 
 Lazymap is a single command-line tool made for network penetration testing. It is composed of multiple selected NMAP scripts, sslscan, ssh-audit, selected metasploit modules, and an HTTP header security checker.
