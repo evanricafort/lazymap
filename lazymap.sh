@@ -334,8 +334,7 @@ declare -A scripts=(
     ["SSL Cipher"]='--script ssl-enum-ciphers -p 443,1443,389,3389 -oN results/sslcipher.txt -v'
     ["HTTP SVN"]='--script http-svn-enum,http-svn-info -p 443 -oN results/httpsvnenum.txt -v'
     ["NetBIOS Information Disclosure"]='-sU -sV -T4 --script nbstat -p137 -Pn -n -oN results/netbiosinfodis.txt -v'
-    ["Oracle TNS Version"]='--script oracle-tns-version -p 1521 -T4 -sV -oN results/oracletnsversion.txt -v'
-    ["Oracle SID Bruteforce"]='--script oracle-sid-brute -p 1521 -T4 -sV -oN results/oraclesidbrute.txt -v'
+    ["Oracle"]='--script oracle-tns-version,oracle-sid-brute -p 1521 -T4 -sV -oN results/oracle.txt -v'
     ["NTP Service"]='-sU -sV --script ntp-monlist,ntp-info -p 123 -oN results/ntpservice.txt -v'
     ["SNMP Information Disclosure"]='-sV --script snmp-brute -p161 -vvv -oN results/snmpinfodis.txt -v'
     ["LDAP"]='-n -sV --script ldap*,ldap-search,ldap-novell-getpass -p 389,636,3268,3269 -oN results/ldap.txt -v'
@@ -379,8 +378,7 @@ declare -A scripts=(
           "SSL Cipher"
           "HTTP SVN"
           "NetBIOS Information Disclosure"
-          "Oracle TNS Version"
-          "Oracle SID Bruteforce"
+          "Oracle"
           "NTP Service"
           "SNMP Information Disclosure"
           "LDAP"
