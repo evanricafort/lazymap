@@ -1,15 +1,13 @@
-<img width="1440" alt="Screenshot 2024-09-27 at 3 21 12 PM" src="https://github.com/user-attachments/assets/ad01a031-adcb-4e3f-99cf-abf7cf52784b">
+<img width="1440" alt="Screenshot 2024-10-09 at 7 22 18 PM" src="https://github.com/user-attachments/assets/19fef66b-163e-4132-9f65-3c62a472c842">
+
 
 # lazymap
 
-Lazymap is a single command-line tool made for network penetration testing. It is composed of multiple selected NMAP scripts, sslscan, ssh-audit, selected metasploit modules, and an HTTP header security checker.
+Lazymap is a single command-line tool made for network penetration testing. It combines multiple selected NMAP scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, and wget.
 
 # Additional Information
+# v0.5
 
-* Added _crackmapexec_ to scan and detect **SMBv1** since most of the time when doing internal netpen, there are targets that are running SMB version 1.
-* Added _Firewall Evasion_ option to execute **firewall evasion scan** on the targets.
-* Added changes that will scan the _-A scripts_ list in a specific order instead of a random loop to avoid hang time.
-* Added changes that will exclude all port and udp scans using the _-ap_ command.
 * Added sslscan for additional POC for ssl-related issues.
 * Added ssh-audit for additional POC for ssh-related issues.
 * Added 2 Metasploit modules to scan RDP and RPC issues.
@@ -18,7 +16,35 @@ Lazymap is a single command-line tool made for network penetration testing. It i
 * Added a not so fancy ascii art for the banner.
 * Improved verbose and scan outputs.
 
-List of Ports
+# v0.6
+
+* Added another metasploit module for Oracle TNS SID Enumeration.
+* Added 'dig' for DNSSec vulnerability scan.
+* Added 'ldapsearch' for LDAP Anonymous Bind scan.
+* Added 'rpcclient' for Unauthenticated RPC scan.
+* Added 'curl' for Default IIS Webpage detection.
+* Re-configured 'checkthatheaders' to scan live host (Port 80, 443, 8443, 8080) only.
+* Added -k flag to exclude sslscan, ssh-audit, and CheckThatHeaders scans.
+* Added -a flag to exclude the all ports scan and UDP scan.
+* Added -N flag to add -n -T4 to Nmap command for faster scanning.
+* Added -h flag to display this help message.
+* Added a feature to combine multiple flags.
+* Improved verbose and scan outputs.
+
+# Requirements
+
+- Bash version 4 or higher
+- nmap
+- curl
+- dig
+- ldapsearch
+- rpcclient
+- metasploit
+- wget
+- sslscan
+- ssh-audit
+
+# List of Ports
 - Port 139 and 445 (SMB)
 - Port 443, 1443, 389, 3389 (SSL Cipher)
 - Port 137 (NetBIOS)
@@ -57,7 +83,7 @@ git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmo
 
 # Usage
 
-- Usage: ./lazymap.sh -u target _[Single Host]_ or ./lazymap.sh -t multipletarget.txt _[Multiple Hosts]_
-- Additional Options: Insert additional scripts with option **-1** for _[vulners]_, **-2** for _[vuln]_, **-3** for both _[vulners & vuln]_ NSE scripts, **-4** for Firewall Evasion Scan and **-ap** if you want to exclude all port scan.
+- Usage: ./lazymap.sh -u host _[Single Host]_ or ./lazymap.sh -t hosts.txt _[Multiple Hosts]_
+- Additional Options: Insert additional scripts with option **-1** for _[vulners]_, **-2** for _[vuln]_, **-3** for both _[vulners & vuln]_ NSE scripts, **-4** for Firewall Evasion Scan, **-a** exclude the all ports scan and UDP scan, **-N** to add -n -T4 to Nmap command for faster scanning and **-k** to exclude sslscan, ssh-audit, and CheckThatHeaders scans.
 - Reminder: Option **-3** may take some time to finish if you have multiple targets.
 - Note: Run in sudo mode to execute NMAP scripts related to UDP scan.
