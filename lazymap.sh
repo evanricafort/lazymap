@@ -1,7 +1,7 @@
 #!/bin/bash
 # Title: lazymap
 # Description: Lazymap is a single command-line tool made for network penetration testing.
-# It combines multiple selected NMAP scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, and wget.
+# It combines multiple selected NMAP scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, PRET and wget.
 # Author: Evan Ricafort - https://evanricafort.com | X: @evanricafort
 
 # Color codes
@@ -17,35 +17,42 @@ if ((BASH_VERSINFO[0] < 4)); then
     exit 1
 fi
 
-# Display functions
 display_ascii_art() {
+    echo -e "${GREEN}"
     echo -e "[..            [.       [....... [..[..      [..[..       [..      [.       [.......  "
     echo -e "[..           [. ..            [..   [..    [.. [. [..   [...     [. ..     [..    [.."
     echo -e "[..          [.  [..          [..     [.. [..   [.. [.. [ [..    [.  [..    [..    [.."
     echo -e "[..         [..   [..       [..         [..     [..  [..  [..   [..   [..   [.......  "
     echo -e "[..        [...... [..     [..          [..     [..   [.  [..  [...... [..  [..       "
     echo -e "[..       [..       [..  [..            [..     [..       [.. [..       [.. [..       "
-    echo -e "[........[..         [..[...........    [..     [..       [..[..         [..[..  v0.6 "
+    echo -e "[........[..         [..[...........    [..     [..       [..[..         [..[..${NC}  ${NC}v0.7${NC}"
+    echo -e "                         ${YELLOW}[lazykit for network penetration testing]${NC}                              "
     echo ""
 }
 
 display_help() {
-    echo -e "${GREEN}Name: Lazymap (Project0x01)${NC}"
-    echo -e "${YELLOW}Author: Evan Ricafort (X - @evanricafort | Portfolio - https://evanricafort.com)${NC}"
-    echo -e "${GREEN}Description: Lazymap is a single command-line tool made for network penetration testing. It combines multiple selected NMAP scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, and wget.${NC}"
+    echo -e "${GREEN}Title: lazymap (Project0x01)${NC}"
+    echo -e "${GREEN}Author: Evan Ricafort (X - @evanricafort | Portfolio - https://evanricafort.com)${NC}"
+    echo -e "${GREEN}Description: Lazymap is a single command-line tool made for network penetration testing. It combines multiple selected NMAP scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, PRET and wget.${NC}"
     echo ""
     echo -e "${GREEN}--Usage--${NC}"
     echo ""
-    echo -e "${GREEN}- ./lazymap.sh -u host [Single Host] or ./lazymap.sh -t hosts.txt [Multiple Hosts]${NC}"
-    echo -e "${GREEN}- Additional Options:${NC}"
+    echo -e "${GREEN}- ./lazymap.sh -u host <options>${NC}"
+    echo -e "${GREEN}- ./lazymap.sh -t hosts <options>${NC}"
+    echo ""
+    echo -e "${GREEN}- Additional options:${NC}"
     echo -e "  ${YELLOW}-1${NC} ${GREEN}for [vulners],${NC}"
     echo -e "  ${YELLOW}-2${NC} ${GREEN}for [vuln],${NC}"
     echo -e "  ${YELLOW}-3${NC} ${GREEN}for both [vulners & vuln] NSE scripts,${NC}"
     echo -e "  ${YELLOW}-4${NC} ${GREEN}for Firewall Evasion Scan,${NC}"
     echo -e "  ${YELLOW}-a${NC} ${GREEN}to exclude the all ports scan and UDP scan.${NC}"
-    echo -e "  ${YELLOW}-N${NC} ${GREEN}to add -n -T4 to Nmap command for faster scanning.${NC}"
+    echo -e "  ${YELLOW}-n${NC} ${GREEN}to add '-n' and '-T4' to nmap command for faster scanning.${NC}"
     echo -e "  ${YELLOW}-k${NC} ${GREEN}to exclude sslscan, ssh-audit, and CheckThatHeaders scans.${NC}"
+    echo -e "  ${YELLOW}-b${NC} ${GREEN}to add '-A', '--min-rate 1000' and '--open' for add boost and open ports results only.${NC}"
+    echo -e "  ${YELLOW}--pret${NC} ${GREEN}to perform printer security check using PRET (Credits to Jens Mueller).${NC}"
     echo -e "  ${YELLOW}-h${NC} ${GREEN}to display this help message.${NC}"
+    echo ""
+    echo -e "${GREEN}- Example for additional options: ./lazymap.sh -t hosts -12bank --pret${NC}"
     echo ""
     echo -e "${GREEN}- Reminder: Option -3 may take some time to finish if you have multiple targets.${NC}"
     echo ""
@@ -70,6 +77,7 @@ is_subnet() {
 run_sslscan() {
     local target=$1
     local output_file="results/sslscan/${target}_sslscan.txt"
+    mkdir -p "$(dirname "$output_file")"  # Create directory only when scan is performed
     echo -e "${GREEN}Starting SSLScan on $target${NC}"
     sslscan --verbose "$target" | tee "$output_file"
     echo -e "${GREEN}SSLScan results saved to $output_file${NC}"
@@ -80,6 +88,7 @@ run_sslscan() {
 run_ssh_audit() {
     local target=$1
     local output_file="results/sshaudit/${target}_sshaudit.txt"
+    mkdir -p "$(dirname "$output_file")"  # Create directory only when scan is performed
     echo -e "${GREEN}Starting SSH-Audit on $target${NC}"
     ssh-audit -v "$target" | tee "$output_file"
     echo -e "${GREEN}SSH-audit results saved to $output_file${NC}"
@@ -136,7 +145,7 @@ check_headers() {
         
         # Check for each header and log the result
         check_single_header "Content-Security-Policy" "$headers" "$url:$port" "$log_file"
-        check_single_header "Permissions-Policy" "$headers" "$url:$port" "$log_file"
+        check_single_header "Permissions-Policy" "  $headers" "$url:$port" "$log_file"
         check_single_header "Referrer-Policy" "$headers" "$url:$port" "$log_file"
         check_single_header "X-Content-Type-Options" "$headers" "$url:$port" "$log_file"
         check_single_header "Strict-Transport-Security" "$headers" "$url:$port" "$log_file"
@@ -292,39 +301,54 @@ add_vuln=false
 exclude_sslscan=false
 exclude_sshaudit=false
 exclude_checkheaders=false
+add_A_minrate_open=false  # For the -b option
+add_nT4=false  # For the -n option
+pret_option=false  # For the --pret option
 
 # Option parsing
-while getopts ":t:u:1234aNkh" opt; do
-    case ${opt} in
-        t ) targets_file=$OPTARG ;;
-        u )
+OPTS=$(getopt -o t:u:1234ankhb --long pret -n "$0" -- "$@")
+if [ $? != 0 ]; then
+    echo -e "${RED}Error parsing options${NC}"
+    exit 1
+fi
+eval set -- "$OPTS"
+
+while true; do
+    case "$1" in
+        -t ) targets_file=$2; shift 2 ;;
+        -u )
+            OPTARG=$2
             # Check for multiple hosts, spaces, commas, or subnets
             if [[ "$OPTARG" == *","* || "$OPTARG" == *" "* || "$OPTARG" == *"/"* ]]; then
                 echo -e "${RED}Error: -u option accepts only a single IP address or hostname without spaces, commas, or subnets.${NC}"
                 exit 1
             fi
             single_target="$OPTARG"
+            shift 2
             ;;
-        1 ) add_vulners=true ;;
-        2 ) add_vuln=true ;;
-        3 )
+        -1 ) add_vulners=true; shift ;;
+        -2 ) add_vuln=true; shift ;;
+        -3 )
             add_vuln=true
             add_vulners=true
+            shift
             ;;
-        4 ) firewall_evasion=true ;;
-        a ) a_option_set=true ;;
-        N ) add_nT4=true ;;
-        k )
+        -4 ) firewall_evasion=true; shift ;;
+        -a ) a_option_set=true; shift ;;
+        -n ) add_nT4=true; shift ;;
+        -k )
             exclude_sslscan=true
             exclude_sshaudit=true
             exclude_checkheaders=true
+            shift
             ;;
-        h ) display_help ;;
-        \? ) echo -e "${RED}Invalid option: -$OPTARG${NC}" 1>&2; exit 1 ;;
-        : ) echo -e "${RED}Invalid option: -$OPTARG requires an argument${NC}" 1>&2; exit 1 ;;
+        -b ) add_A_minrate_open=true; shift ;;
+        -h ) display_help; shift ;;
+        --pret ) pret_option=true; shift ;;
+        -- ) shift; break ;;
+        * ) break ;;
     esac
 done
-shift $((OPTIND -1))
 
 # Set exclude_allports if -a is specified
 if [[ "$a_option_set" = true ]]; then
@@ -369,18 +393,8 @@ if [[ "$firewall_evasion" = true ]]; then
     mkdir -p results/firewallevasion
 fi
 
-# Conditionally create other directories based on -k option
-if [[ "$exclude_sslscan" != true ]]; then
-    mkdir -p results/sslscan
-fi
-
-if [[ "$exclude_sshaudit" != true ]]; then
-    mkdir -p results/sshaudit
-fi
-
-if [[ "$exclude_checkheaders" != true ]]; then
-    mkdir -p results/checkthatheader
-fi
+# Removed pre-creation of sslscan, sshaudit, and checkthatheader directories
+# They will be created only when their respective scans are performed
 
 # Define firewall evasion scripts
 declare -A firewall_evasion_scripts=(
@@ -427,7 +441,6 @@ if [[ "$firewall_evasion" = true ]]; then
         "MAC Spoof ASUS Result"
         "MAC Spoof Juniper Result"
         "MAC Spoof Broadcom Result"
-        "MAC Spoof Qualcomm Result"
         "Bad Checksum Result"
         "Exotic Flag Result"
         "Source Port Check Result"
@@ -460,9 +473,9 @@ declare -A scripts=(
     ["NetBIOS"]='-sU -sV -T4 --script nbstat -p137 -Pn -n -oN results/netbiosinfodis.txt -v'
     ["Oracle"]='--script oracle-tns-version,oracle-sid-brute -p 1521 -T4 -sV -oN results/oracle.txt -oG results/oracle.gnmap -v'
     ["NTP"]='-sU -sV --script ntp-monlist,ntp-info -p 123 -oN results/ntpservice.txt -v'
-    ["SNMP"]='-sV --script snmp-brute -p161 -vvv -oN results/snmpinfodis.txt -v'
+    ["SNMP"]='-sV --script snmp*snmp-brute -p161 -vvv -oN results/snmpinfodis.txt -v'
     ["LDAP"]='-n -sV --script ldap*,ldap-search,ldap-novell-getpass -p 389,636,3268,3269 -oN results/ldap.txt -oG results/ldap.gnmap -v'
-    ["HTTP"]='-sV -p 80,81,443,8000,8080,8443 --script http-headers,http-iis-webdav-vuln,http-iis-short-name-brute,http-auth-finder,http-apache-server-status,http-traceroute,http-trace,http-vuln*,http-axis2-dir-traversal,http-cross-domain-policy --script-args http-cross-domain-policy.domain-lookup=true -oN results/http.txt -oG results/http.gnmap -v'
+    ["HTTP"]='-sV -p 80,81,443,8000,8080,8443 --script http-headers,http-iis-webdav-vuln,http-auth-finder,http-apache-server-status,http-traceroute,http-trace,http-vuln*,http-axis2-dir-traversal,http-cross-domain-policy --script-args http-cross-domain-policy.domain-lookup=true -oN results/http.txt -oG results/http.gnmap -v'
     ["Portmapper"]='-sSUC --script nfs-showmount -p111 -oN results/portmapper111.txt -v'
     ["MySQL"]='-sV -p 3306 --script mysql-audit,mysql-databases,mysql-dump-hashes,mysql-empty-password,mysql-enum,mysql-info,mysql-query,mysql-users,mysql-variables,mysql-vuln-cve2012-2122 -oN results/mysql.txt -v'
     ["MSSQL"]='--script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config -sV -p 1433 -oN results/mssql.txt -v'
@@ -476,6 +489,7 @@ declare -A scripts=(
     ["ApacheAJP"]='-sV --script ajp-auth,ajp-headers,ajp-methods,ajp-request -n -p 8009 -oN results/apacheajp.txt -v'
     ["FTP"]='--script ftp-anon --script-args ftp-anon.maxlist=-1 -p 21 -oN results/ftp.txt -v'
     ["TFTP"]='-n -Pn -sU -p69 -sV --script tftp-enum -oN results/tftp.txt -v'
+    ["RTSP"]='-sV --script rtsp-*,rtsp-url-brute -p 554 -oN results/rtsp.txt -v'
     ["WildcardCertificate"]='--script ssl-cert -p443 -oN results/wildcardcert.txt -v'
     ["SMTP"]='--script smtp-commands,smtp-open-relay,smtp-enum-users -p 25,465,587 -oN results/smtp.txt -v'
     ["IPMI"]='-sU --script ipmi-brute,ipmi-cipher-zero -p 623 -oN results/ipmi.txt -v'
@@ -492,7 +506,6 @@ declare -A scripts=(
     ["UDP"]='-sC -sU -T4 -oN results/udp.txt -v --reason'
     ["AllPorts"]='-p- -T4 -oN results/allports.txt -v --reason'
 )
-
 # Specify the order in which the scripts should be executed
 ordered_scripts=(
     "SMB"
@@ -517,6 +530,7 @@ ordered_scripts=(
     "ApacheAJP"
     "FTP"
     "TFTP"
+    "RTSP"
     "WildcardCertificate"
     "SMTP"
     "IPMI"
@@ -536,7 +550,7 @@ ordered_scripts=(
 
 # Exclude UDP and All Ports scripts if -a is specified
 if [[ "$exclude_allports" = true ]]; then
-    echo -e "${YELLOW}Starting scans without 'UDP' and 'AllPorts' scripts.${NC}\n"
+    echo -e "${YELLOW}• Starting scans without 'UDP' and 'AllPorts' scripts.${NC}\n"
     ordered_scripts=($(printf "%s\n" "${ordered_scripts[@]}" | grep -v -E "^(UDP|AllPorts)$"))
 fi
 
@@ -545,13 +559,13 @@ additional_nmap_scripts=()
 
 # Add vulners script if specified
 if [[ "$add_vulners" = true ]]; then
-    echo -e "${YELLOW}Starting scans with option -1 (vulners).${NC}\n"
+    echo -e "${YELLOW}• Starting scans with option -1 (vulners).${NC}\n"
     additional_nmap_scripts+=("vulners")
 fi
 
 # Add vuln script if specified
 if [[ "$add_vuln" = true ]]; then
-    echo -e "${YELLOW}Starting scans with option -2 (vuln).${NC}\n"
+    echo -e "${YELLOW}• Starting scans with option -2 (vuln).${NC}\n"
     additional_nmap_scripts+=("vuln")
 fi
 
@@ -570,26 +584,31 @@ if [[ -n "$unique_scripts" ]]; then
     done
 fi
 
-# Add -n -T4 to Nmap scripts if -N is specified
+# Add -n -T4 to Nmap scripts if -n is specified
 if [[ "$add_nT4" = true ]]; then
-    echo -e "${YELLOW}Adding -n -T4 to accelerate associative array scans.${NC}\n"
+    echo -e "${YELLOW}• Adding -n -T4 to accelerate associative array scans.${NC}\n"
     for key in "${!scripts[@]}"; do
         scripts[$key]="-n -T4 ${scripts[$key]}"
     done
 fi
 
-# -------------------- #
-#    *** ADDITION ***  #
-# -------------------- #
+# Add --min-rate 1000 --open to Nmap scripts if -b is specified
+if [[ "$add_A_minrate_open" = true ]]; then
+    echo -e "${YELLOW}• Adding '--min-rate 1000 --open' for additional boost and open ports only results.${NC}\n"
+    for key in "${!scripts[@]}"; do
+        scripts[$key]="--min-rate 1000 --open ${scripts[$key]}"
+    done
+fi
 
 # Display the appropriate message based on the -k flag
 if [[ "$exclude_sslscan" = true && "$exclude_sshaudit" = true && "$exclude_checkheaders" = true ]]; then
-    echo -e "${YELLOW}Starting scans without sslscan, ssh-audit and checkthatheaders.${NC}\n"
+    echo -e "${YELLOW}• Starting scans without sslscan, ssh-audit and checkthatheaders.${NC}\n"
 fi
 
-# -------------------- #
-#    *** END ADD ***    #
-# -------------------- #
+# After options are parsed and validated
+if [[ "$pret_option" = true ]]; then
+    echo -e "${YELLOW}• PRET option selected. PRET scans will be performed.${NC}"
+fi
 
 # Main scanning loop
 for script_name in "${ordered_scripts[@]}"; do
@@ -623,6 +642,53 @@ done
 
 echo -e "${BLUE}Associative scans completed, output files saved to results directory.${NC}"
 echo -e "\n--------------------------------\n"
+
+# ------------------------------------------- #
+#         PRET PRINTER SECURITY CHECK         #
+# ------------------------------------------- #
+
+# Run PRET scans if --pret option is set
+if [[ "$pret_option" = true ]]; then
+    echo -e "${YELLOW}Starting PRET for Printer Security Check.${NC}\n"
+
+    # Set PRET_DIR and PRET_SCRIPT
+    PRET_DIR="$(pwd)/pret_tool"
+    PRET_SCRIPT="$PRET_DIR/pret.py"
+
+    # Check if PRET is installed
+    if [[ ! -x "$PRET_SCRIPT" ]]; then
+        echo -e "${YELLOW}PRET not found. Installing PRET...${NC}"
+        # Clone the PRET repository
+        git clone https://github.com/RUB-NDS/PRET.git "$PRET_DIR"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Failed to clone PRET repository. Please check your internet connection and git installation.${NC}"
+            exit 1
+        fi
+        # Install dependencies
+        if command -v pip &>/dev/null; then
+            pip install colorama pysnmp
+        elif command -v pip3 &>/dev/null; then
+            pip3 install colorama pysnmp
+        else
+            echo -e "${RED}pip not found. Cannot install PRET dependencies automatically. Please install pip and try again.${NC}"
+            exit 1
+        fi
+        # Make pret.py executable
+        chmod +x "$PRET_SCRIPT"
+        # Check again if pret.py is executable
+        if [[ ! -x "$PRET_SCRIPT" ]]; then
+            echo -e "${RED}Failed to install PRET. Please install it manually.${NC}"
+            exit 1
+        fi
+    fi
+
+    # Run PRET with the correct Python interpreter and display output/UI
+    echo -e "${GREEN}Starting local printers check.${NC}\n"
+    python3 "$PRET_SCRIPT"
+
+    echo -e "${BLUE}Printer security check completed.${NC}"
+    echo -e "\n--------------------------------\n"
+fi
 
 # Now process targets and run scanning functions
 if [[ "$firewall_evasion" != true ]]; then
@@ -686,10 +752,6 @@ scan_rpc "results/rpc_targets.txt"
 # Scan Oracle TNS Listener targets
 scan_oracle "results/oracle_targets.txt"
 
-# ----------------------------- #
-#      SCANS COMPLETED MESSAGE   #
-# ----------------------------- #
-
 echo -e "${BLUE}Metasploit Scans Completed.${NC}"
 echo -e "\n--------------------------------\n"
 
@@ -741,7 +803,7 @@ if [[ -f "results/http.gnmap" ]]; then
         done
     done
 else
-    echo -e "${RED}results/http.gnmap not found. Skipping Microsoft-IIS detection from gnmap.${NC}\n"
+    echo -e "${RED}results/http.gnmap not found. Skipping Microsoft-IIS detection from gnmap.${NC}"
 fi
 
 # Parse results/http.txt to find hosts with Microsoft-IIS in Server header
@@ -863,9 +925,25 @@ if [[ -f "results/dnsvuln.gnmap" ]]; then
         # For each IP, run 'dig +dnssec <IP>' and save output
         for ip in $ips_with_port_53_open; do
             echo -e "\n${GREEN}Running 'dig +dnssec' on $ip${NC}"
-            output_file="results/dnssec/${ip}_dnssec_test.txt"
-            dig +dnssec "$ip" | tee "$output_file"
-            echo -e "${BLUE}DNSSec scan for $ip completed and saved to $output_file${NC}"
+            # Run dig and capture output
+            dig_output=$(dig +dnssec "$ip")
+            # Check for flags
+            if echo "$dig_output" | grep -q " flags:.*ra"; then
+                # 'ra' flag found, target is vulnerable to DNS recursion enabled
+                output_file="results/dnssec/${ip}_recursion_test.txt"
+                echo "$dig_output" | tee "$output_file"
+                echo -e "${BLUE}DNS Recursion vulnerability found for $ip. Output saved to $output_file${NC}"
+            elif ! echo "$dig_output" | grep -q " flags:.*ad"; then
+                # 'ad' flag not found, target is vulnerable to DNSSec not configured
+                output_file="results/dnssec/${ip}_dns_dnssec_test.txt"
+                echo "$dig_output" | tee "$output_file"
+                echo -e "${BLUE}DNSSec not configured vulnerability found for $ip. Output saved to $output_file${NC}"
+            else
+                # No vulnerability found
+                output_file="results/dnssec/${ip}_dnssec_scan.txt"
+                echo "$dig_output" | tee "$output_file"
+                echo -e "${BLUE}No DNS vulnerabilities found for $ip. Output saved to $output_file${NC}"
+            fi
             echo -e "\n--------------------------------\n"
         done
     else
