@@ -4,7 +4,7 @@
 display_ascii_art() {
     echo -e "${GREEN}"
     echo " ████                                                                     "
-    echo "░░███                                                                     "
+    echo "░░███                                                                     v0.7"
     echo " ░███   ██████    █████████ █████ ████ █████████████    ██████   ████████ "
     echo " ░███  ░░░░░███  ░█░░░░███ ░░███ ░███ ░░███░░███░░███  ░░░░░███ ░░███░░███"
     echo " ░███   ███████  ░   ███░   ░███ ░███  ░███ ░███ ░███   ███████  ░███ ░███"
@@ -13,17 +13,17 @@ display_ascii_art() {
     echo "░░░░░  ░░░░░░░░  ░░░░░░░░░   ░░░░░███ ░░░░░ ░░░ ░░░░░  ░░░░░░░░  ░███░░░  "
     echo "                             ███ ░███                            ░███     "
     echo "                            ░░██████                             █████    "
-    echo "                             ░░░░░░               v0.7          ░░░░░     "
+    echo "                             ░░░░░░                             ░░░░░     "
     echo ""
-    echo -e "                    ${YELLOW}[network penetration testing kit]${NC}             "
+    echo -e "                    ${YELLOW}[network penetration testing kit]${NC}    "
     echo ""
     echo ""
 }
 
 display_help() {
-    echo -e "${GREEN}Title: lazymap (Project0x01)${NC}"
+    echo -e "${GREEN}Title: lazymap (project0x01)${NC}"
     echo -e "${GREEN}Author: Evan Ricafort (X - @evanricafort | Portfolio - https://evanricafort.com)${NC}"
-    echo -e "${GREEN}Description: Lazymap is a command-line tool for network penetration testing. It combines multiple selected nmap scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, PRET and wget.${NC}"
+    echo -e "${GREEN}Description: lazymap is a command-line tool for network penetration testing. it combines multiple selected nmap scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, PRET and wget.${NC}"
     echo ""
     echo -e "${BLUE}--Usage--${NC}"
     echo -e "${GREEN}- ./lazymap.sh -u host <options>${NC}"
