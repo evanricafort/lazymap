@@ -19,6 +19,7 @@ check_all_commands() {
     check_command "msfconsole"
     check_command "curl"
     check_command "rpcclient"
+    check_command "screen"
 }
 
 is_subnet() {
