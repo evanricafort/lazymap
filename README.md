@@ -1,5 +1,4 @@
-
-<img width="574" height="154" alt="ascii-text-art" src="https://github.com/user-attachments/assets/eb31cbdf-191b-41c9-94e1-2b7bdd6045c3" />
+<img width="574" height="154" alt="ascii-text-art" src="https://github.com/user-attachments/assets/f74e0068-ae82-4cd2-bcc4-255056d51741" />
 
 # lazymap
 
