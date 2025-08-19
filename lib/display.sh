@@ -23,7 +23,7 @@ display_ascii_art() {
 display_help() {
     echo -e "${GREEN}Title: lazymap (project0x01)${NC}"
     echo -e "${GREEN}Author: Evan Ricafort (X - @evanricafort | Portfolio - https://evanricafort.com)${NC}"
-    echo -e "${GREEN}Description: lazymap is a command-line tool for network penetration testing. it combines multiple selected nmap scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, PRET and wget.${NC}"
+    echo -e "${GREEN}Description: lazymap is a single command-line tool for network penetration testing. it combines multiple selected nmap scripts, sslscan, ssh-audit, dig, ldapsearch, curl, rpcclient, selected metasploit modules, PRET and wget.${NC}"
     echo ""
     echo -e "${BLUE}--Usage--${NC}"
     echo -e "${GREEN}- ./lazymap.sh -u host <options>${NC}"
@@ -39,6 +39,7 @@ display_help() {
     echo -e "  ${YELLOW}-k${NC} ${GREEN}to exclude sslscan, ssh-audit, and CheckThatHeaders scans.${NC}"
     echo -e "  ${YELLOW}-b${NC} ${GREEN}to add '-A', '--min-rate 1000' and '--open' for add boost and open ports results only.${NC}"
     echo -e "  ${YELLOW}--pret${NC} ${GREEN}to perform printer security check using PRET (Credits to Jens Mueller).${NC}"
+    echo -e "  ${YELLOW}--responder eth0${NC} ${GREEN}to run responder session.${NC}"
     echo -e "  ${YELLOW}-h${NC} ${GREEN}to display this help message.${NC}"
     echo ""
     echo -e "${GREEN}- Example for additional options: ./lazymap.sh -t hosts -12bank --pret${NC}"
