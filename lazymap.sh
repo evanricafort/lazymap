@@ -14,6 +14,7 @@ source "lib/metasploit_scans.sh"
 source "lib/pret_scan.sh"
 source "lib/firewall_evasion.sh"
 source "lib/report_generator.sh"
+source "lib/responder_handler.sh"
 
 # Check for Bash version 4 or higher
 if ((BASH_VERSINFO[0] < 4)); then
@@ -49,7 +50,7 @@ initialize_nmap_scripts
 initialize_firewall_evasion_scripts
 
 # --- Option Parsing ---
-OPTS=$(getopt -o t:u:1234ankhb --long pret -n "$0" -- "$@")
+OPTS=$(getopt -o t:u:1234ankhRb --long pret,discord:,responder: -n "$0" -- "$@")
 if [ $? != 0 ]; then
     echo -e "${RED}Error parsing options${NC}"
     exit 1
@@ -78,10 +79,21 @@ while true; do
         -b ) add_A_minrate_open=true; shift ;;
         -h ) display_help; shift ;;
         --pret ) pret_option=true; shift ;;
+        --responder ) shift; responder_option=true; responder_interface=$1; shift ;;
         -- ) shift; break ;;
         * ) break ;;
     esac
 done
+
+# Responder
+if [[ "$responder_option" = true ]]; then
+    if [[ -z "$responder_interface" ]]; then
+        echo -e "${RED}Please specify a network interface for Responder (e.g., --responder eth0).${NC}"
+        exit 1
+    fi
+    source "lib/responder_handler.sh"
+    run_responder "$responder_interface"
+fi
 
 # Input validation and checks
 if [[ -n "$targets_file" && -n "$single_target" ]]; then
