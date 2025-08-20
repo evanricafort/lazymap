@@ -29,6 +29,7 @@ run_metasploit_scans() {
     else
         echo -e "${YELLOW}No Oracle targets found. Skipping Oracle Metasploit scan.${NC}\n"
     fi
+    echo ""
     echo -e "${BLUE}Metasploit scans completed, output files saved to their respective directories.${NC}"
     echo -e "\n--------------------------------\n"
 }
