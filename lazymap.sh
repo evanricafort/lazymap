@@ -134,3 +134,17 @@ run_metasploit_scans
 if [[ "$pret_option" = true ]]; then
     run_pret_scan
 fi
+
+# Determine the final target information for the report
+if [[ -n "$targets_file" ]]; then
+    target_info=$(cat "$targets_file" | tr '\n' ' ')
+elif [[ -n "$single_target" ]]; then
+    target_info="$single_target"
+else
+    target_info="N/A"
+fi
+
+# Generate the final HTML report
+generate_html_report "$target_info"
+
+exit 0
