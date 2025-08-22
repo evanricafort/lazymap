@@ -55,7 +55,7 @@ initialize_nmap_scripts
 initialize_firewall_evasion_scripts
 
 # --- Option Parsing ---
-OPTS=$(getopt -o t:u:1234ankhRb --long pret,discord:,responder: -n "$0" -- "$@")
+OPTS=$(getopt -o t:u:124ankhRb --long pret,discord:,responder: -n "$0" -- "$@")
 if [ $? != 0 ]; then
     echo -e "${RED}Error parsing options${NC}"
     exit 1
@@ -77,7 +77,6 @@ while true; do
             ;;
         -1 ) add_vulners=true; echo -e "${GREEN}Option -1 included: Adding vulners scripts.${NC}"; shift ;;
         -2 ) add_vuln=true; echo -e "${GREEN}Option -2 included: Adding vulnerability scripts.${NC}"; shift ;;
-        -3 ) add_vuln=true; add_vulners=true; echo -e "${GREEN}Option -3 included: Adding all vulnerability scripts.${NC}"; shift ;;
         -4 ) firewall_evasion=true; echo -e "${GREEN}Option -4 included: Performing firewall evasion scans.${NC}"; shift ;;
         -a ) a_option_set=true; echo -e "${GREEN}Option -a included: Performing intense scans on open ports only.${NC}"; shift ;;
         -n ) add_nT4=true; echo -e "${GREEN}Option -n included: Setting Nmap timing template to T4.${NC}"; shift ;;
@@ -110,28 +109,8 @@ elif [[ -z "$targets_file" && -z "$single_target" ]]; then
     exit 1
 fi
 
-# Apply optional arguments to Nmap commands
-apply_nmap_options() {
-    if [[ "$a_option_set" = true ]]; then
-        echo -e "${YELLOW}The -a option is set, excluding the full port scan and UDP scan.${NC}"
-        NMAP_SCRIPTS["tcp"]="nmap -sV -sT -oN results/tcp.nmap"
-        unset 'NMAP_SCRIPTS["udp"]'
-    fi
-
-    if [[ "$add_nT4" = true ]]; then
-        for script_name in "${!NMAP_SCRIPTS[@]}"; do
-            NMAP_SCRIPTS[$script_name]+=" -T4"
-        done
-    fi
-
-    if [[ "$add_A_minrate_open" = true ]]; then
-        echo -e "${YELLOW}The -b option is set, adding aggressive flags to all Nmap scans.${NC}"
-        for script_name in "${!NMAP_SCRIPTS[@]}"; do
-            NMAP_SCRIPTS[$script_name]+=" -A --min-rate 1000 -T4"
-        done
-    fi
-
-    # Handle vulnerability scripts (-1, -2, -3)
+# Function to add vulnerability scripts based on options -1 and -2
+add_vuln_scripts() {
     if [[ "$add_vuln" = true ]]; then
         echo -e "${YELLOW}Adding Nmap vuln scripts to all scans.${NC}"
         for script_name in "${!NMAP_SCRIPTS[@]}"; do
@@ -145,6 +124,32 @@ apply_nmap_options() {
             NMAP_SCRIPTS[$script_name]+=" --script vulners"
         done
     fi
+}
+
+# Apply optional arguments to Nmap commands
+apply_nmap_options() {
+    if [[ "$a_option_set" = true ]]; then
+        echo -e "${YELLOW}The -a option is set, excluding the full port scan and UDP scan.${NC}"
+        NMAP_SCRIPTS["tcp"]="nmap -sV -sT -oN results/tcp.nmap"
+        unset 'NMAP_SCRIPTS["udp"]'
+    fi
+
+    if [[ "$add_nT4" = true ]]; then
+        echo -e "${YELLOW}The -n option is set, adding timing to all nmap scans.${NC}"
+        for script_name in "${!NMAP_SCRIPTS[@]}"; do
+            NMAP_SCRIPTS[$script_name]+=" -n -T4"
+        done
+    fi
+
+    if [[ "$add_A_minrate_open" = true ]]; then
+        echo -e "${YELLOW}The -b option is set, adding aggressive flags to all nmap scans.${NC}"
+        for script_name in "${!NMAP_SCRIPTS[@]}"; do
+            NMAP_SCRIPTS[$script_name]+=" -A --min-rate 1000 --open"
+        done
+    fi
+    
+    # Call the new function to handle vulnerability scripts
+    add_vuln_scripts
 }
 apply_nmap_options
 
