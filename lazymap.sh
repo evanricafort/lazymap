@@ -44,7 +44,7 @@ exclude_sslscan=false
 exclude_sshaudit=false
 exclude_checkheaders=false
 add_A_minrate_open=false
-add_nT4=false
+add_nT4=true
 pret_option=false
 firewall_evasion=false
 targets_file=""
@@ -64,7 +64,7 @@ eval set -- "$OPTS"
 
 while true; do
     case "$1" in
-        -t ) targets_file=$2; shift 2 ;;
+        -t ) targets_file=$2; echo -e "${GREEN}Targets file specified: ${targets_file}${NC}"; shift 2 ;;
         -u )
             OPTARG=$2
             if [[ "$OPTARG" == *","* || "$OPTARG" == *" "* || "$OPTARG" == *"/"* ]]; then
@@ -72,19 +72,20 @@ while true; do
                 exit 1
             fi
             single_target="$OPTARG"
+            echo -e "${GREEN}Single target specified: ${single_target}${NC}"
             shift 2
             ;;
-        -1 ) add_vulners=true; shift ;;
-        -2 ) add_vuln=true; shift ;;
-        -3 ) add_vuln=true; add_vulners=true; shift ;;
-        -4 ) firewall_evasion=true; shift ;;
-        -a ) a_option_set=true; shift ;;
-        -n ) add_nT4=true; shift ;;
-        -k ) exclude_sslscan=true; exclude_sshaudit=true; exclude_checkheaders=true; shift ;;
-        -b ) add_A_minrate_open=true; shift ;;
-        -h ) display_help; shift ;;
-        --pret ) pret_option=true; shift ;;
-        --responder ) shift; responder_option=true; responder_interface=$1; shift ;;
+        -1 ) add_vulners=true; echo -e "${GREEN}Option -1 included: Adding vulners scripts.${NC}"; shift ;;
+        -2 ) add_vuln=true; echo -e "${GREEN}Option -2 included: Adding vulnerability scripts.${NC}"; shift ;;
+        -3 ) add_vuln=true; add_vulners=true; echo -e "${GREEN}Option -3 included: Adding all vulnerability scripts.${NC}"; shift ;;
+        -4 ) firewall_evasion=true; echo -e "${GREEN}Option -4 included: Performing firewall evasion scans.${NC}"; shift ;;
+        -a ) a_option_set=true; echo -e "${GREEN}Option -a included: Performing intense scans on open ports only.${NC}"; shift ;;
+        -n ) add_nT4=true; echo -e "${GREEN}Option -n included: Setting Nmap timing template to T4.${NC}"; shift ;;
+        -k ) exclude_sslscan=true; exclude_sshaudit=true; exclude_checkheaders=true; echo -e "${GREEN}Option -k included: Excluding sslscan, ssh-audit, and checkheaders.${NC}"; shift ;;
+        -b ) add_A_minrate_open=true; echo -e "${GREEN}Option -b included: Adding -A --min-rate 2000 to Nmap scans.${NC}"; shift ;;
+        -h ) display_help; exit 0 ;;
+        --pret ) pret_option=true; echo -e "${GREEN}Option --pret included: Performing PRET scan.${NC}"; shift ;;
+        --responder ) shift; responder_option=true; responder_interface=$1; echo -e "${GREEN}Option --responder included: Starting Responder on interface ${responder_interface}.${NC}"; shift ;;
         -- ) shift; break ;;
         * ) break ;;
     esac
@@ -111,26 +112,38 @@ fi
 
 # Apply optional arguments to Nmap commands
 apply_nmap_options() {
-    # Check if a_option is set
     if [[ "$a_option_set" = true ]]; then
         echo -e "${YELLOW}The -a option is set, excluding the full port scan and UDP scan.${NC}"
-        # Exclude the full port scan (tcp.nmap)
         NMAP_SCRIPTS["tcp"]="nmap -sV -sT -oN results/tcp.nmap"
-        # Unset the UDP scan command, effectively disabling it
         unset 'NMAP_SCRIPTS["udp"]'
     fi
 
-    # Check for -n option
     if [[ "$add_nT4" = true ]]; then
         for script_name in "${!NMAP_SCRIPTS[@]}"; do
             NMAP_SCRIPTS[$script_name]+=" -T4"
         done
     fi
 
-    # Check for -A -T4 and --min-rate 2000
     if [[ "$add_A_minrate_open" = true ]]; then
-        NMAP_SCRIPTS["tcp"]="nmap -sV -A --min-rate 2000 -T4 -oN results/tcp.nmap"
-        NMAP_SCRIPTS["udp"]="nmap -sV -sU -A --min-rate 2000 -T4 -oN results/udp.nmap"
+        echo -e "${YELLOW}The -b option is set, adding aggressive flags to all Nmap scans.${NC}"
+        for script_name in "${!NMAP_SCRIPTS[@]}"; do
+            NMAP_SCRIPTS[$script_name]+=" -A --min-rate 1000 -T4"
+        done
+    fi
+
+    # Handle vulnerability scripts (-1, -2, -3)
+    if [[ "$add_vuln" = true ]]; then
+        echo -e "${YELLOW}Adding Nmap vuln scripts to all scans.${NC}"
+        for script_name in "${!NMAP_SCRIPTS[@]}"; do
+            NMAP_SCRIPTS[$script_name]+=" --script vuln"
+        done
+    fi
+
+    if [[ "$add_vulners" = true ]]; then
+        echo -e "${YELLOW}Adding Nmap vulners scripts to all scans.${NC}"
+        for script_name in "${!NMAP_SCRIPTS[@]}"; do
+            NMAP_SCRIPTS[$script_name]+=" --script vulners"
+        done
     fi
 }
 apply_nmap_options
@@ -146,10 +159,10 @@ run_other_scans() {
             echo -e "${CYAN}Running sslscan...${NC}"
             if [[ -n "$targets_file" ]]; then
                 while read -r target; do
-                    sslscan --no-renegotiation --no-fallback --no-tls-all --no-heartbleed --no-ciphersuite-all "$target" >> "results/sslscan.txt" 2>&1
+                    sslscan "$target" >> "results/sslscan.txt" 2>&1
                 done < "$targets_file"
             elif [[ -n "$single_target" ]]; then
-                sslscan --no-renegotiation --no-fallback --no-tls-all --no-heartbleed --no-ciphersuite-all "$single_target" >> "results/sslscan.txt" 2>&1
+                sslscan "$single_target" >> "results/sslscan.txt" 2>&1
             fi
         else
             echo -e "${YELLOW}sslscan not found. Skipping...${NC}"
