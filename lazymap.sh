@@ -10,6 +10,11 @@ source "lib/display.sh"
 source "lib/checks.sh"
 source "lib/nmap_scans.sh"
 source "lib/other_scans.sh"
+source "lib/smbv1_cme.sh"
+source "lib/dns_vulns.sh"
+source "lib/ldap_anon_bind.sh"
+source "lib/rpc_unauth.sh"
+source "lib/iis_detection.sh"
 source "lib/metasploit_scans.sh"
 source "lib/pret_scan.sh"
 source "lib/firewall_evasion.sh"
@@ -129,6 +134,21 @@ run_other_scans "$targets_file" "$single_target"
 
 # Run the Metasploit scans
 run_metasploit_scans
+
+# Run the IIS Detection scans
+run_iis_detection
+
+# Run the RPC Unauthenticated scans
+run_rpc_unauth_scan
+
+# Run the LDAP Anonymous login scans
+run_ldap_anon_bind
+
+# Run the DNS Vulnerability scans
+run_dns_vulns_scan
+
+# Run the SMBv1 Service detection scans
+run_cme_smbv1
 
 # Run PRET scan
 if [[ "$pret_option" = true ]]; then
