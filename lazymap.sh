@@ -90,15 +90,10 @@ while true; do
     esac
 done
 
-# Responder
-if [[ "$responder_option" = true ]]; then
-    if [[ -z "$responder_interface" ]]; then
-        echo -e "${RED}Please specify a network interface for Responder (e.g., --responder eth0).${NC}"
-        exit 1
-    fi
-    source "lib/responder_handler.sh"
-    run_responder "$responder_interface"
-fi
+# --- Main Logic ---
+
+# Check for required tools
+check_all_commands
 
 # Input validation and checks
 if [[ -n "$targets_file" && -n "$single_target" ]]; then
@@ -114,46 +109,122 @@ elif [[ -z "$targets_file" && -z "$single_target" ]]; then
     exit 1
 fi
 
-# Check for required tools
-check_all_commands
-
-# Execute scans
-if [[ "$firewall_evasion" = true ]]; then
-    run_firewall_evasion_scans "$targets_file" "$single_target"
-    exit 0
-fi
-
 # Apply optional arguments to Nmap commands
+apply_nmap_options() {
+    # Check if a_option is set
+    if [[ "$a_option_set" = true ]]; then
+        echo -e "${YELLOW}The -a option is set, excluding the full port scan and UDP scan.${NC}"
+        # Exclude the full port scan (tcp.nmap)
+        NMAP_SCRIPTS["tcp"]="nmap -sV -sT -oN results/tcp.nmap"
+        # Unset the UDP scan command, effectively disabling it
+        unset 'NMAP_SCRIPTS["udp"]'
+    fi
+
+    # Check for -n option
+    if [[ "$add_nT4" = true ]]; then
+        for script_name in "${!NMAP_SCRIPTS[@]}"; do
+            NMAP_SCRIPTS[$script_name]+=" -T4"
+        done
+    fi
+
+    # Check for -A -T4 and --min-rate 2000
+    if [[ "$add_A_minrate_open" = true ]]; then
+        NMAP_SCRIPTS["tcp"]="nmap -sV -A --min-rate 2000 -T4 -oN results/tcp.nmap"
+        NMAP_SCRIPTS["udp"]="nmap -sV -sU -A --min-rate 2000 -T4 -oN results/udp.nmap"
+    fi
+}
 apply_nmap_options
 
-# Run the main Nmap scans
-run_nmap_scans "$targets_file" "$single_target"
+run_other_scans() {
+    local targets_file="$1"
+    local single_target="$2"
+    
+    echo -e "${GREEN}Starting other scans...${NC}"
 
-# Run the other scans (SSLScan, SSH-Audit, etc.)
-run_other_scans "$targets_file" "$single_target"
+    if [[ "$exclude_sslscan" != true ]]; then
+        if command -v sslscan &> /dev/null; then
+            echo -e "${CYAN}Running sslscan...${NC}"
+            if [[ -n "$targets_file" ]]; then
+                while read -r target; do
+                    sslscan --no-renegotiation --no-fallback --no-tls-all --no-heartbleed --no-ciphersuite-all "$target" >> "results/sslscan.txt" 2>&1
+                done < "$targets_file"
+            elif [[ -n "$single_target" ]]; then
+                sslscan --no-renegotiation --no-fallback --no-tls-all --no-heartbleed --no-ciphersuite-all "$single_target" >> "results/sslscan.txt" 2>&1
+            fi
+        else
+            echo -e "${YELLOW}sslscan not found. Skipping...${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Skipping sslscan as requested.${NC}"
+    fi
 
-# Run the Metasploit scans
-run_metasploit_scans
+    if [[ "$exclude_sshaudit" != true ]]; then
+        if command -v ssh-audit &> /dev/null; then
+            echo -e "${CYAN}Running ssh-audit...${NC}"
+            if [[ -n "$targets_file" ]]; then
+                ssh-audit -T "$targets_file" >> "results/sshaudit.txt" 2>&1
+            elif [[ -n "$single_target" ]]; then
+                ssh-audit "$single_target" >> "results/sshaudit.txt" 2>&1
+            fi
+        else
+            echo -e "${YELLOW}ssh-audit not found. Skipping...${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Skipping ssh-audit as requested.${NC}"
+    fi
 
-# Run the IIS Detection scans
-run_iis_detection
+    if [[ "$exclude_checkheaders" != true ]]; then
+        if command -v curl &> /dev/null; then
+            echo -e "${CYAN}Running checkthatheader...${NC}"
+            if [[ -n "$targets_file" ]]; then
+                while read -r target; do
+                    echo "Checking headers for $target..." >> "results/checkthatheader.txt"
+                    curl -I "$target" >> "results/checkthatheader.txt" 2>&1
+                done < "$targets_file"
+            elif [[ -n "$single_target" ]]; then
+                echo "Checking headers for $single_target..." >> "results/checkthatheader.txt"
+                curl -I "$single_target" >> "results/checkthatheader.txt" 2>&1
+            fi
+        else
+            echo -e "${YELLOW}curl not found. Skipping checkthatheader...${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Skipping checkheaders as requested.${NC}"
+    fi
+}
 
-# Run the RPC Unauthenticated scans
-run_rpc_unauth_scan
 
-# Run the LDAP Anonymous login scans
-run_ldap_anon_bind
+# Function to run all scans
+run_all_scans() {
+    # Run the main Nmap scans
+    run_nmap_scans "$targets_file" "$single_target"
 
-# Run the DNS Vulnerability scans
-run_dns_vulns_scan
+    # Run the other scans (SSLScan, SSH-Audit, etc.)
+    run_other_scans "$targets_file" "$single_target"
 
-# Run the SMBv1 Service detection scans
-run_cme_smbv1
+    # Run the Metasploit scans
+    run_metasploit_scans
 
-# Run PRET scan
-if [[ "$pret_option" = true ]]; then
-    run_pret_scan
-fi
+    # Run the IIS Detection scans
+    run_iis_detection
+
+    # Run the RPC Unauthenticated scans
+    run_rpc_unauth_scan
+
+    # Run the LDAP Anonymous login scans
+    run_ldap_anon_bind
+
+    # Run the DNS Vulnerability scans
+    run_dns_vulns_scan
+
+    # Run the SMBv1 Service detection scans
+    run_cme_smbv1
+
+    # Run PRET scan
+    if [[ "$pret_option" = true ]]; then
+        run_pret_scan
+    fi
+}
 
 # Determine the final target information for the report
 if [[ -n "$targets_file" ]]; then
@@ -162,6 +233,20 @@ elif [[ -n "$single_target" ]]; then
     target_info="$single_target"
 else
     target_info="N/A"
+fi
+
+# Conditional execution based on options
+if [[ "$responder_option" = true ]]; then
+    if [[ -z "$responder_interface" ]]; then
+        echo -e "${RED}Please specify a network interface for Responder (e.g., --responder eth0).${NC}"
+        exit 1
+    fi
+    source "lib/responder_handler.sh"
+    run_responder "$responder_interface"
+elif [[ "$firewall_evasion" = true ]]; then
+    run_firewall_evasion_scans "$targets_file" "$single_target"
+else
+    run_all_scans
 fi
 
 # Generate the final HTML report
