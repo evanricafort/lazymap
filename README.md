@@ -42,3 +42,5 @@ git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmo
 - Single Host: ./lazymap.sh -u host <options>
 - Multiple Hosts/Subnet: ./lazymap.sh -t hosts <options>
 - Example Usage: ./lazymap.sh -t hosts -12bank --pret --exclude-udp --interface eth0 -o my_scan
+
+Note: Run in sudo mode to execute NMAP scripts related to UDP scan and Responder.
