@@ -52,7 +52,7 @@ generate_html_report() {
 </head>
 <body>
     <div class="container">
-        <h1>Lazymap - network penetration testing kit</h1>
+        <h1>Lazymap - Network Penetration Testing Kit</h1>
         <div class="metadata">
             <h2>Scan Details</h2>
             <table>
