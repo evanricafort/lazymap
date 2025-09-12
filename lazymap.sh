@@ -140,7 +140,7 @@ main() {
     # Generate HTML Report
     end_time=$(date +%s)
     end_date=$(date)
-    generate_html_report "$output_dir" "$start_date" "$end_date"
+    generate_html_report "$output_dir" "$start_date" "$end_date" "${TARGETS[@]}"
 
     echo -e "${GREEN}All scans completed. Check the '$output_dir' directory for outputs.${NC}\n"
     echo -e "${GREEN}Happy Hacking! - evan (@evanricafort)${NC}"
