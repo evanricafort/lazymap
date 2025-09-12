@@ -63,7 +63,7 @@ generate_html_report() {
                     <th>Original Target(s)</th>
                     <td>$(echo "${targets_array[*]}" | sed 's/ /, /g')</td>
                 </tr>
-                <tr><th>Live Hosts Found</th><td>
+                <tr><th>Live Host(s) Found</th><td>
 $(
     if [[ -f "$output_dir/live_hosts.txt" ]]; then
         cat "$output_dir/live_hosts.txt" | awk '{print "<span>" $0 "</span><br>"}'
