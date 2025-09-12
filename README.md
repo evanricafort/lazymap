@@ -10,7 +10,7 @@
                              ███ ░███                            ░███     
                             ░░██████                             █████    
                              ░░░░░░                             ░░░░░
-                      [network penetration testing kit]
+                       [network penetration testing kit]
 ```
 
 # lazymap
