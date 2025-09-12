@@ -9,7 +9,7 @@ generate_html_report() {
     local output_dir=$1
     local start_date=$2
     local end_date=$3
-    local -a targets_array=("${@:4}")
+    local targets_array=($4)
 
     echo -e "${YELLOW}Generating HTML report...${NC}\n"
 
@@ -59,17 +59,10 @@ generate_html_report() {
                 <tr><th>Report Title</th><td>Lazymap Scan Report</td></tr>
                 <tr><th>Start Date & Time</th><td>$start_date</td></tr>
                 <tr><th>End Date & Time</th><td>$end_date</td></tr>
-                <tr><th>Original Targets</th><td>
-$(
-    if [[ "${#targets_array[@]}" -gt 0 ]]; then
-        for target in "${targets_array[@]}"; do
-            echo "<span>$target</span><br>"
-        done
-    else
-        echo "N/A"
-    fi
-)
-                </td></tr>
+                <tr>
+                    <th>Original Target(s)</th>
+                    <td>$(echo "${targets_array[*]}" | sed 's/ /, /g')</td>
+                </tr>
                 <tr><th>Live Hosts Found</th><td>
 $(
     if [[ -f "$output_dir/live_hosts.txt" ]]; then
