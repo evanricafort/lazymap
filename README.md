@@ -26,7 +26,6 @@ lazymap is a single command-line tool for network penetration testing. it combin
 - ldapsearch
 - rpcclient
 - metasploit
-- wget
 - sslscan
 - ssh-audit
 - screen
