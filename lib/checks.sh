@@ -1,5 +1,9 @@
-#!/bin/bash
-# Functions for checking commands and input validation
+#!/usr/bin/env bash
+
+# lib/checks.sh
+# Functions for checking dependencies and input validation.
+
+source "lib/colors.sh"
 
 check_command() {
     if ! command -v "$1" &>/dev/null; then
@@ -8,7 +12,7 @@ check_command() {
     fi
 }
 
-check_all_commands() {
+check_dependencies() {
     check_command "nmap"
     check_command "crackmapexec"
     check_command "ssh-audit"
@@ -19,10 +23,5 @@ check_all_commands() {
     check_command "msfconsole"
     check_command "curl"
     check_command "rpcclient"
-    check_command "screen"
-}
-
-is_subnet() {
-    local target=$1
-    [[ "$target" == *"/"* ]]
+    check_command "screen" # New dependency for Responder
 }
