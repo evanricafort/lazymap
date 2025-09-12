@@ -1,0 +1,20 @@
+# Lazymap Directory Structure
+
+├── lazymap.sh - main
+├── extra
+│   └── responder.sh - Manages the execution of Responder.
+├── lib
+│   ├── checks.sh - Functions for checking dependencies and input validation.
+│   ├── colors.sh - Handles the output colors.
+│   └── help.sh - Displays the help message.
+│── scans
+│   ├── live_hosts.sh - Handles live host discovery to find online targets for scans.
+│   ├── dns.sh - Conducts DNS related vulnerability checks.
+│   ├── ldap.sh - Performs LDAP anonymous bind scan.
+│   ├── metasploit.sh - Runs Metasploit scans for RDP, RPC, Oracle, NTP, SNMP and AFP vulnerabilities.
+│   ├── nmap.sh - Manages all Nmap scans.
+│   ├── pret.sh - Manages PRET printer security checks.
+│   ├── smb.sh - Contains crackmapexec for SMBv1 scan and Unauthenticated RPC scans.
+│   └── web.sh - Handles web and SSH related scans.
+├── reports
+    └── html_report.sh - Generates an HTML report from overall scan results.
