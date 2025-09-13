@@ -10,6 +10,7 @@ generate_html_report() {
     local start_date=$2
     local end_date=$3
     local targets_array=($4)
+    local targets_file=$5
 
     echo -e "${YELLOW}Generating HTML report...${NC}\n"
 
@@ -59,10 +60,6 @@ generate_html_report() {
                 <tr><th>Report Title</th><td>Lazymap Scan Report</td></tr>
                 <tr><th>Start Date & Time</th><td>$start_date</td></tr>
                 <tr><th>End Date & Time</th><td>$end_date</td></tr>
-                <tr>
-                    <th>Original Target(s)</th>
-                    <td>$(echo "${targets_array[*]}" | sed 's/ /, /g')</td>
-                </tr>
                 <tr><th>Live Host(s) Found</th><td>
 $(
     if [[ -f "$output_dir/live_hosts.txt" ]]; then
