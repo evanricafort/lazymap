@@ -9,6 +9,7 @@ start_date=$(date)
 output_dir="results"
 declare -a TARGETS
 declare -A OPTIONS
+discord_webhook=""
 
 # Include libraries and scripts
 source "lib/colors.sh"
@@ -23,14 +24,29 @@ source "scans/dns.sh"
 source "scans/pret.sh"
 source "extra/responder.sh"
 source "reports/html_report.sh"
+source "reports/send_discord_webhook.sh"
 source "scans/live_hosts.sh"
+
+handle_discord_webhook() {
+    # Check if the --discord option was used
+    if [[ "${OPTIONS[send_to_discord]}" == true ]]; then
+        echo -e "${YELLOW}Please enter the Discord webhook URL:${NC}"
+        read -r discord_webhook
+        # Basic validation
+        if [[ -z "$discord_webhook" ]]; then
+            echo -e "${RED}Error: No Discord webhook URL provided. Aborting Discord report send.${NC}"
+            # Unset the option so the send function is not called later
+            unset OPTIONS[send_to_discord]
+        fi
+    fi
+}
 
 main() {
     # Display ASCII art on every run
     display_ascii_art
 
     # --- Option Parsing ---
-    TEMP=$(getopt -o t:u:1234ankhbo: --long pret,interface:,help,exclude-udp -n "$0" -- "$@")
+    TEMP=$(getopt -o t:u:1234ankhbo: --long pret,interface:,help,exclude-udp,discord -n "$0" -- "$@")
     if [ $? != 0 ]; then
         echo -e "${RED}Error: Failed to parse options.${NC}" >&2
         exit 1
@@ -58,15 +74,19 @@ main() {
             --pret ) OPTIONS[pret]=true; shift ;;
             --interface ) OPTIONS[responder_interface]=$2; shift 2 ;;
             --exclude-udp ) OPTIONS[exclude_udp]=true; shift ;;
+            --discord ) OPTIONS[send_to_discord]=true; shift ;;
             -h | --help ) display_help; exit 0 ;;
             -- ) shift; break ;;
             * ) break ;;
         esac
     done
+    
+    # Prompt for the Discord webhook URL before any scans begin.
+    handle_discord_webhook
 
     # Run Responder immediately if the option is specified
     if [[ -n "${OPTIONS[responder_interface]}" ]]; then
-        run_responder "${OPTIONS[responder_interface]}" "$output_dir" & # Run in the background
+        run_responder "${OPTIONS[responder_interface]}" "$output_dir" &
     fi
 
     if [[ -n "$targets_file" && -n "$single_target" ]]; then
@@ -141,6 +161,12 @@ main() {
     end_time=$(date +%s)
     end_date=$(date)
     generate_html_report "$output_dir" "$start_date" "$end_date" "${TARGETS[@]}"
+
+    # Call the Discord webhook module if the flag is set and a URL was provided
+    if [[ "${OPTIONS[send_to_discord]}" == true && -n "$discord_webhook" ]]; then
+        local report_file="$output_dir/lazymap_report.html"
+        send_discord_webhook "$report_file" "$discord_webhook" "$start_date"
+    fi
 
     echo -e "${GREEN}All scans completed. Check the '$output_dir' directory for outputs.${NC}\n"
     echo -e "${GREEN}Happy Hacking! - evan (@evanricafort)${NC}"
