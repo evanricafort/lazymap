@@ -46,6 +46,7 @@ display_help() {
     echo -e "  ${YELLOW}--interface [iface]${NC} ${GREEN}to run Responder on a specified interface.${NC}"
     echo -e "  ${YELLOW}-o [dir]${NC} ${GREEN}to specify a custom output directory (default: results).${NC}"
     echo -e "  ${YELLOW}--exclude-udp${NC} ${GREEN}to exclude UDP scan.${NC}"
+    echo -e "  ${YELLOW}--discord [webhook]${NC} ${GREEN}to send the overall report to your discord server.${NC}"
     echo -e "  ${YELLOW}-h${NC} ${GREEN}to display this help message.${NC}"
     echo ""
     echo -e "${GREEN}- Example: ./lazymap.sh -t hosts -12bank --pret --exclude-udp --interface eth0 -o my_scan${NC}"
