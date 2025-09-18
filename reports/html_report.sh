@@ -9,8 +9,6 @@ generate_html_report() {
     local output_dir=$1
     local start_date=$2
     local end_date=$3
-    local targets_array=($4)
-    local targets_file=$5
 
     echo -e "${YELLOW}Generating HTML report...${NC}\n"
 
