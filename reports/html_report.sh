@@ -5,6 +5,62 @@
 
 source "lib/colors.sh"
 
+# Function to check file status and create report summary row
+report_row() {
+    local scan_name="$1"
+    local file_path="$2"
+    local summary_text="$3"
+    local status="Failed or No Findings"
+    local status_color="red"
+    
+    if [[ -d "$file_path" && -n "$(find "$file_path" -type f -print -quit)" ]]; then
+        status="Completed"
+        status_color="green"
+    elif [[ -f "$file_path" && -s "$file_path" ]]; then
+        status="Completed"
+        status_color="green"
+    elif [[ -f "$file_path" ]]; then
+        status="Empty/No Findings"
+        status_color="orange"
+        summary_text="No key findings detected."
+    fi
+    
+    echo "<tr><td>$scan_name</td><td style=\"color:$status_color;\">$status</td><td>$summary_text</td></tr>"
+}
+
+# Function to create a collapsible section for a directory or file
+create_collapsible_section() {
+    local title="$1"
+    local path="$2"
+    local glob_pattern="$3"
+    
+    # This block generates the inner shell logic for the report
+    local output=""
+    if [[ -d "$path" ]]; then
+        local files_found=false
+        local content="<details><summary>$title</summary><pre>"
+        
+        # Find all files matching the glob pattern in the directory and its subdirectories
+        while read -r file; do
+            if [[ -f "$file" ]]; then
+                content+="---- File: $(basename "$file") ----\n"
+                content+="$(cat "$file")\n\n"
+                files_found=true
+            fi
+        done < <(find "$path" -type f -name "$glob_pattern")
+        
+        # Corrected the indentation here
+        if [[ "$files_found" == false ]]; then
+            content+="No files found in this directory.\n"
+        fi
+        content+="</pre></details>"
+        output="$content"
+    elif [[ -f "$path" ]]; then
+        output="<details><summary>$title</summary><pre>$(cat "$path")</pre></details>"
+    fi
+    echo -e "$output"
+}
+
 generate_html_report() {
     local output_dir=$1
     local start_date=$2
@@ -82,30 +138,6 @@ $(
                 </thead>
                 <tbody>
 $(
-    # Function to check file status and create report row
-    report_row() {
-        local scan_name="$1"
-        local file_path="$2"
-        local summary_text="$3"
-        local status="Failed or No Findings"
-        local status_color="red"
-        
-        if [[ -d "$file_path" && -n "$(find "$file_path" -type f -print -quit)" ]]; then
-            status="Completed"
-            status_color="green"
-        elif [[ -f "$file_path" && -s "$file_path" ]]; then
-            status="Completed"
-            status_color="green"
-        elif [[ -f "$file_path" ]]; then
-            status="Empty/No Findings"
-            status_color="orange"
-            summary_text="No key findings detected."
-        fi
-        
-        echo "<tr><td>$scan_name</td><td style=\"color:$status_color;\">$status</td><td>$summary_text</td></tr>"
-    }
-
-    # Generate rows for each scan type
     report_row "Nmap Scan" "$output_dir/nmap/TCP.txt" "General TCP and port scans."
     report_row "SSLScan" "$output_dir/sslscan" "SSL/TLS configurations and vulnerabilities."
     report_row "SSH-Audit" "$output_dir/sshaudit" "SSH server security audit."
@@ -163,38 +195,6 @@ $(
             </script>
             
 $(
-    # Function to create a collapsible section for a directory or file
-    create_collapsible_section() {
-        local title="$1"
-        local path="$2"
-        local glob_pattern="$3"
-        if [[ -d "$path" ]]; then
-            local files_found=false
-            echo "<details><summary>$title</summary>"
-            echo "<pre>"
-            # Find all files matching the glob pattern in the directory and its subdirectories
-            while read -r file; do
-                if [[ -f "$file" ]]; then
-                    echo "---- File: $(basename "$file") ----"
-                    cat "$file"
-                    echo ""
-                    files_found=true
-                fi
-            done < <(find "$path" -type f -name "$glob_pattern")
-            if [[ "$files_found" == false ]]; then
-                echo "No files found in this directory."
-            fi
-            echo "</pre>"
-            echo "</details>"
-        elif [[ -f "$path" ]]; then
-            echo "<details><summary>$title</summary>"
-            echo "<pre>"
-            cat "$path"
-            echo "</pre>"
-            echo "</details>"
-        fi
-    }
-
     # Nmap scans
     echo "<h3>Nmap Scan Outputs</h3>"
     create_collapsible_section "Nmap Scans" "$output_dir/nmap" "*.txt"
