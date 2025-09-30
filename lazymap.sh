@@ -41,6 +41,27 @@ handle_discord_webhook() {
     fi
 }
 
+# New module for checking and exiting if no live hosts are found
+check_for_live_hosts_and_exit() {
+    local live_hosts_file="$output_dir/live_hosts.txt"
+    # Check if the file does not exist or is empty (-s)
+    if [[ ! -s "$live_hosts_file" ]]; then
+        echo -e "\n${BLUE}======================================================${NC}"
+        echo -e "${YELLOW}🚨 Scan Termination Notice 🚨${NC}"
+        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${CYAN}No live host IP/s were found in the defined target scope.${NC}"
+        echo -e "${CYAN}Scanning process has been successfully terminated.${NC}"
+        echo -e "${CYAN}Output directory: ${output_dir} (created)${NC}"
+        echo -e "${BLUE}======================================================${NC}"
+        end_time=$(date +%s)
+        local total_time=$((end_time - start_time))
+        local minutes=$((total_time / 60))
+        local seconds=$((total_time % 60))
+        echo -e "${GREEN}Scan finished in ${minutes} minutes and ${seconds} seconds.${NC}\n"
+        exit 0
+    fi
+}
+
 main() {
     # Display ASCII art on every run
     display_ascii_art
@@ -122,6 +143,11 @@ main() {
       printf "%s\n" "${TARGETS[@]}" > "$output_dir/live_hosts.txt"
     fi
 
+    # --- CHECK: Exit if no live hosts found ---
+    check_for_live_hosts_and_exit
+    # ---------------------------------------------
+
+
     # --- Main Scan Workflow ---
     if [[ "${OPTIONS[firewall_evasion]}" == true ]]; then
         echo -e "${YELLOW}Starting Firewall Evasion Scans.${NC}\n"
@@ -160,7 +186,7 @@ main() {
     # Generate HTML Report
     end_time=$(date +%s)
     end_date=$(date)
-    generate_html_report "$output_dir" "$start_date" "$end_date" "${TARGETS[@]}"
+    generate_html_report "$output_dir" "$start_date" "$end_date"
 
     # Call the Discord webhook module if the flag is set and a URL was provided
     if [[ "${OPTIONS[send_to_discord]}" == true && -n "$discord_webhook" ]]; then
