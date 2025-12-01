@@ -21,7 +21,7 @@ run_nmap_scans() {
         ["NTP"]='-sU -sV --script ntp-monlist,ntp-info -p 123'
         ["SNMP"]='-sV --script snmp-brute,snmp-info -p161 -vvv'
         ["LDAP"]='-sV --script ldap*,ldap-search,ldap-novell-getpass -p 389,636,3268,3269'
-        ["HTTP"]='-sV -p 80,81,443,8000,8080,8443 --script http-headers,http-iis-webdav-vuln,http-auth-finder,http-apache-server-status,http-traceroute,http-trace,http-vuln*,http-axis2-dir-traversal,http-cross-domain-policy --script-args http-cross-domain-policy.domain-lookup=true'
+        ["HTTP"]='-sV -p 80,81,443,8000,8080,8443 --script http-methods,http-headers,http-iis-webdav-vuln,http-auth-finder,http-apache-server-status,http-traceroute,http-trace,http-vuln*,http-axis2-dir-traversal,http-cross-domain-policy --script-args http-cross-domain-policy.domain-lookup=true'
         ["Portmapper"]='-sSUC --script nfs-showmount -p111'
         ["MySQL"]='-sV -p 3306 --script mysql-audit,mysql-databases,mysql-dump-hashes,mysql-empty-password,mysql-enum,mysql-info,mysql-query,mysql-users,mysql-variables,mysql-vuln-cve2012-2122'
         ["MSSQL"]='--script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config -sV -p 1433'
