@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# scans/metasploit.sh
-# Runs Metasploit scans for RDP, RPC, Oracle, NTP, SNMP and AFP vulnerabilities.
-
 source "lib/colors.sh"
 
 run_metasploit_scan() {
@@ -18,7 +15,6 @@ run_metasploit_scan() {
 run_metasploit_scans() {
     local output_dir=$1
 
-    # RDP
     if [[ -s "$output_dir/nmap/RDP.gnmap" ]]; then
         mkdir -p "$output_dir/msfrdp"
         awk '/^Host: / && /Ports:.*3389\/open/ {print $2}' "$output_dir/nmap/RDP.gnmap" > "$output_dir/rdp_targets.txt"
@@ -39,7 +35,6 @@ run_metasploit_scans() {
         fi
     fi
 
-    # RPC
     if [[ -s "$output_dir/nmap/RPC.gnmap" ]]; then
         mkdir -p "$output_dir/msfrpc"
         awk '/^Host: / && /Ports:.*135\/open/ {print $2}' "$output_dir/nmap/RPC.gnmap" > "$output_dir/rpc_targets.txt"
@@ -60,7 +55,6 @@ run_metasploit_scans() {
         fi
     fi
 
-    # Oracle
     if [[ -s "$output_dir/nmap/Oracle.gnmap" ]]; then
         mkdir -p "$output_dir/msforacletnscmd"
         awk '/^Host: / && /Ports:.*1521\/open/ {print $2}' "$output_dir/nmap/Oracle.gnmap" > "$output_dir/oracle_targets.txt"
@@ -81,7 +75,6 @@ run_metasploit_scans() {
         fi
     fi
 
-    # AFP
     if [[ -s "$output_dir/nmap/AFP.gnmap" ]]; then
         mkdir -p "$output_dir/msfafp"
         awk '/^Host: / && /Ports:.*548\/open/ {print $2}' "$output_dir/nmap/AFP.gnmap" > "$output_dir/afp_targets.txt"
@@ -101,7 +94,6 @@ run_metasploit_scans() {
         fi
     fi
 
-    # NTP
     if [[ -s "$output_dir/nmap/NTP.gnmap" ]]; then
         mkdir -p "$output_dir/msfntp"
         awk '/^Host: / && /Ports:.*123\/open/ {print $2}' "$output_dir/nmap/NTP.gnmap" > "$output_dir/ntp_targets.txt"
@@ -122,7 +114,6 @@ run_metasploit_scans() {
         fi
     fi
 
-    # SNMP
     if [[ -s "$output_dir/nmap/SNMP.gnmap" ]]; then
         mkdir -p "$output_dir/msfsnmp"
         awk '/^Host: / && /Ports:.*161\/open/ {print $2}' "$output_dir/nmap/SNMP.gnmap" > "$output_dir/snmp_targets.txt"
