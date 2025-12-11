@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# scans/smb.sh
-# Performs SMBv1 check and Unauthenticated RPC scans.
-
 source "lib/colors.sh"
 
 run_smb_scans() {
@@ -10,7 +7,6 @@ run_smb_scans() {
     shift
     local targets_array=("$@")
 
-    # CrackMapExec for SMBv1
     echo -e "${YELLOW}Starting CrackMapExec for SMBv1 detection.${NC}\n"
     local target_list=""
     if [[ "${#targets_array[@]}" -gt 0 ]]; then
@@ -30,7 +26,6 @@ run_smb_scans() {
 
     echo -e "${BLUE}CrackMapExec SMBv1 detection completed.${NC}\n"
 
-    # Unauthenticated RPC
     if [[ -s "$output_dir/rpc_targets.txt" ]]; then
         echo -e "${YELLOW}Starting Unauthenticated RPC scan.${NC}\n"
         mkdir -p "$output_dir/unauthrpc"
