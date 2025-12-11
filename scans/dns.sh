@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# scans/dns.sh
-# Conducts DNS related vulnerability checks.
-
 source "lib/colors.sh"
 
 run_dns_scan() {
@@ -17,7 +14,6 @@ run_dns_scan() {
             for ip in $ips_with_port_53_open; do
                 echo -e "\n${GREEN}Running 'dig +dnssec' on $ip${NC}"
 
-                # Capture and display the output using 'tee'
                 dig_output=$(dig +dnssec "$ip")
 
                 if echo "$dig_output" | grep -q " flags:.*ra"; then
