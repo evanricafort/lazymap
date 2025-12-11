@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# lib/checks.sh
-# Functions for checking dependencies and input validation.
-
 source "lib/colors.sh"
 
 check_command() {
@@ -23,5 +20,6 @@ check_dependencies() {
     check_command "msfconsole"
     check_command "curl"
     check_command "rpcclient"
-    check_command "screen" # New dependency for Responder
+    check_command "screen"
+    check_command "zip"
 }
