@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 
-# scans/pret.sh
-# Manages PRET printer security checks.
-
 source "lib/colors.sh"
 
 run_pret_scan() {
     local output_dir=$1
     echo -e "${YELLOW}Starting PRET for Printer Security Check.${NC}\n"
-    
+
     local PRET_DIR="$(pwd)/pret_tool"
     local PRET_SCRIPT="$PRET_DIR/pret.py"
-    
+
     if [[ ! -x "$PRET_SCRIPT" ]]; then
         echo -e "${YELLOW}PRET not found. Installing PRET...${NC}"
         git clone https://github.com/RUB-NDS/PRET.git "$PRET_DIR"
@@ -26,9 +23,9 @@ run_pret_scan() {
             exit 1
         fi
     fi
-    
+
     echo -e "${GREEN}Starting local printers check.${NC}\n"
     python3 "$PRET_SCRIPT"
-    
+
     echo -e "${BLUE}Printer security check completed.${NC}\n"
 }
