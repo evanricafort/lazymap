@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# lib/help.sh
-# Displays the help message.
-
 source "lib/colors.sh"
 
 display_ascii_art() {
