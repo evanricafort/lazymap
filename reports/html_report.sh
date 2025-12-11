@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
 
-# reports/html_report.sh
-# Generates an HTML report from overall scan results.
-
 source "lib/colors.sh"
 
-# Function to check file status and create report summary row
 report_row() {
     local scan_name="$1"
     local file_path="$2"
     local summary_text="$3"
     local status="Failed or No Findings"
     local status_color="red"
-    
+
     if [[ -d "$file_path" && -n "$(find "$file_path" -type f -print -quit)" ]]; then
         status="Completed"
         status_color="green"
@@ -24,23 +20,20 @@ report_row() {
         status_color="orange"
         summary_text="No key findings detected."
     fi
-    
+
     echo "<tr><td>$scan_name</td><td style=\"color:$status_color;\">$status</td><td>$summary_text</td></tr>"
 }
 
-# Function to create a collapsible section for a directory or file
 create_collapsible_section() {
     local title="$1"
     local path="$2"
     local glob_pattern="$3"
-    
-    # This block generates the inner shell logic for the report
+
     local output=""
     if [[ -d "$path" ]]; then
         local files_found=false
         local content="<details><summary>$title</summary><pre>"
-        
-        # Find all files matching the glob pattern in the directory and its subdirectories
+
         while read -r file; do
             if [[ -f "$file" ]]; then
                 content+="---- File: $(basename "$file") ----\n"
@@ -48,8 +41,7 @@ create_collapsible_section() {
                 files_found=true
             fi
         done < <(find "$path" -type f -name "$glob_pattern")
-        
-        # Corrected the indentation here
+
         if [[ "$files_found" == false ]]; then
             content+="No files found in this directory.\n"
         fi
@@ -125,7 +117,7 @@ $(
                 </td></tr>
             </table>
         </div>
-        
+
         <div class="scan-results">
             <h2>Scan Results Summary</h2>
             <table>
@@ -159,7 +151,7 @@ $(
         <div class="raw-data">
             <h2>Raw Scan Outputs</h2>
             <div class="note">Each section below contains the raw output from the corresponding tool. Click to expand.</div>
-            
+
             <div class="search-container">
                 <input type="text" id="searchInput" onkeyup="searchFunction()" placeholder="Search for exact keywords...">
             </div>
@@ -193,13 +185,11 @@ $(
                 }
             }
             </script>
-            
+
 $(
-    # Nmap scans
     echo "<h3>Nmap Scan Outputs</h3>"
     create_collapsible_section "Nmap Scans" "$output_dir/nmap" "*.txt"
-    
-    # Metasploit scans
+
     echo "<h3>Metasploit Scan Outputs</h3>"
     create_collapsible_section "Metasploit - RDP" "$output_dir/msfrdp" "*.txt"
     create_collapsible_section "Metasploit - RPC" "$output_dir/msfrpc" "*.txt"
@@ -208,21 +198,17 @@ $(
     create_collapsible_section "Metasploit - NTP" "$output_dir/msfntp" "*.txt"
     create_collapsible_section "Metasploit - SNMP" "$output_dir/msfsnmp" "*.txt"
 
-    # Web scans
     echo "<h3>Web Scan Outputs</h3>"
     create_collapsible_section "SSLScan" "$output_dir/sslscan" "*.txt"
     create_collapsible_section "SSH-Audit" "$output_dir/sshaudit" "*.txt"
-    
-    # SMB and RPC scans
+
     echo "<h3>SMB & RPC Scan Outputs</h3>"
     create_collapsible_section "CrackMapExec (SMBv1)" "$output_dir/smbv1.txt"
     create_collapsible_section "Unauthenticated RPC" "$output_dir/unauthrpc" "*.txt"
 
-    # LDAP scans
     echo "<h3>LDAP Scan Outputs</h3>"
     create_collapsible_section "LDAP Anonymous Bind" "$output_dir/ldap_anonymous_bind" "*.txt"
-    
-    # DNS scans
+
     echo "<h3>DNS Scan Outputs</h3>"
     create_collapsible_section "DNS Vulnerabilities" "$output_dir/dnssec" "*.txt"
 )
