@@ -1,17 +1,12 @@
 #!/usr/bin/env bash
 
-# scans/nmap.sh
-# Manages all selected nmap scans.
-
 source "lib/colors.sh"
 
 run_nmap_scans() {
     local output_dir="$1"
 
-    # Use the live_hosts.txt file as the target list
     local targets_file="$output_dir/live_hosts.txt"
 
-    # Define Nmap scripts
     declare -A scripts=(
         ["SMB"]='-p 139,445 --script smb-security-mode,smb2-security-mode,smb-enum-users.nse,smb-vuln-cve2009-3103,smb-vuln-ms06-025,smb-vuln-ms07-029,smb-vuln-ms08-067,smb-vuln-ms10-054,smb-vuln-ms10-061,smb-vuln-ms17-010'
         ["SSLCipher"]='--script ssl-enum-ciphers -p 443,1443,389,3389'
@@ -53,7 +48,6 @@ run_nmap_scans() {
         ["AllPorts"]='-p-'
     )
 
-    # Specify the order in which the scripts should be executed
     ordered_scripts=(
         "SMB" "SSLCipher" "HTTPSVN" "NetBIOS" "Oracle" "NTP" "SNMP" "LDAP" "HTTP"
         "Portmapper" "MySQL" "MSSQL" "SSH" "Telnet" "DNS" "Pop3" "NFS" "RDP" "RPC"
@@ -61,19 +55,16 @@ run_nmap_scans() {
         "IKE" "AFP" "Gopher" "Kerberos" "PJL" "Redis" "RealVNC" "SIP" "TCP" "UDP" "AllPorts"
     )
 
-    # Exclude UDP if --exclude-udp is specified
     if [[ "${OPTIONS[exclude_udp]}" == true ]]; then
         echo -e "${YELLOW}• Excluding 'UDP' scripts.${NC}\n"
         ordered_scripts=($(printf "%s\n" "${ordered_scripts[@]}" | grep -v -E "^(UDP)$"))
     fi
 
-    # Exclude UDP and All Ports if -a is specified
     if [[ "${OPTIONS[exclude_allports]}" == true ]]; then
         echo -e "${YELLOW}• Excluding 'UDP' and 'AllPorts' scripts.${NC}\n"
         ordered_scripts=($(printf "%s\n" "${ordered_scripts[@]}" | grep -v -E "^(UDP|AllPorts)$"))
     fi
 
-    # Accumulate additional Nmap scripts based on options
     additional_nmap_scripts=()
     if [[ "${OPTIONS[vulners]}" == true ]]; then
         echo -e "${YELLOW}• Adding 'vulners' script.${NC}\n"
@@ -84,14 +75,12 @@ run_nmap_scans() {
         additional_nmap_scripts+=("vuln")
     fi
 
-    # Add the accumulated scripts to each Nmap script entry
     if [[ -n "$additional_nmap_scripts" ]]; then
         for key in "${!scripts[@]}"; do
             scripts[$key]+=" --script ${additional_nmap_scripts[*]}"
         done
     fi
 
-    # Add -n -T4 to Nmap scripts if -n is specified
     if [[ "${OPTIONS[add_nT4]}" == true ]]; then
         echo -e "${YELLOW}• Adding -n -T4 to accelerate scans.${NC}\n"
         for key in "${!scripts[@]}"; do
@@ -99,7 +88,6 @@ run_nmap_scans() {
         done
     fi
 
-    # Add --min-rate 1000 --open if -b is specified
     if [[ "${OPTIONS[add_A_minrate_open]}" == true ]]; then
         echo -e "${YELLOW}• Adding '--min-rate 1000 --open' for a boost and open ports only.${NC}\n"
         for key in "${!scripts[@]}"; do
@@ -107,20 +95,16 @@ run_nmap_scans() {
         done
     fi
 
-    # Main scanning loop
     for script_name in "${ordered_scripts[@]}"; do
         if [[ -z "${scripts[$script_name]}" ]]; then continue; fi
 
         script_args="${scripts[$script_name]}"
         echo -e "${GREEN}Starting ${script_name} scan.${NC}"
 
-        # Corrected file path and added -oG for grepable format
         nmap_output_file="$output_dir/nmap/${script_name}.txt"
 
-        # Use the live_hosts.txt file as the target input
         nmap $script_args -v --reason -oN "$nmap_output_file" -iL "$targets_file"
 
-        # Add a second output for metasploit scan
         if [[ "$script_name" == "Oracle" || "$script_name" == "RDP" || "$script_name" == "RPC" || "$script_name" == "AFP" || "$script_name" == "NTP" || "$script_name" == "LDAP" || "$script_name" == "DNS" || "$script_name" == "SNMP" || "$script_name" == "SSH" || "$script_name" == "SSLCipher" ]]; then
             nmap -sV -oG "$output_dir/nmap/${script_name}.gnmap" -iL "$targets_file"
         fi
@@ -134,7 +118,6 @@ run_nmap_scans() {
 run_firewall_evasion_scans() {
     local output_dir="$1"
 
-    # Use the live_hosts.txt file as the target list
     local targets_file="$output_dir/live_hosts.txt"
 
     declare -A firewall_evasion_scripts=(
@@ -165,11 +148,9 @@ run_firewall_evasion_scans() {
         script_args="${firewall_evasion_scripts[$script_name]}"
         echo -e "${GREEN}Starting scan for ${script_name}.${NC}"
 
-        # Corrected file path
         nmap_output_file="$output_dir/nmap/firewall_evasion/${script_name}.txt"
         mkdir -p "$(dirname "$nmap_output_file")"
 
-        # Use the live_hosts.txt file as the target input
         nmap $script_args -v --reason -oN "$nmap_output_file" -iL "$targets_file"
 
         echo -e "${GREEN}Completed ${script_name} scan.${NC}\n"
