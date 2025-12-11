@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# scans/ldap.sh
-# Performs LDAP anonymous bind scan.
-
 source "lib/colors.sh"
 
 run_ldap_scan() {
