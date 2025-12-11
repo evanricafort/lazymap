@@ -2,44 +2,61 @@
 
 source "lib/colors.sh"
 
-run_smb_scans() {
+run_sslscan() {
+    local target=$1
+    local output_dir=$2
+    local output_file="$output_dir/sslscan/${target}_sslscan.txt"
+    mkdir -p "$(dirname "$output_file")"
+    echo -e "${GREEN}Starting SSLScan on $target${NC}"
+    sslscan --verbose "$target" | tee "$output_file"
+    echo -e "${GREEN}SSLScan on $target completed.${NC}"
+    echo -e "\n--------------------------------\n"
+}
+
+run_ssh_audit() {
+    local target=$1
+    local output_dir=$2
+    local output_file="$output_dir/sshaudit/${target}_sshaudit.txt"
+    mkdir -p "$(dirname "$output_file")"
+    echo -e "${GREEN}Starting SSH-Audit on $target${NC}"
+    ssh-audit -v "$target" | tee "$output_file"
+    echo -e "${GREEN}SSH-Audit on $target completed.${NC}"
+    echo -e "\n--------------------------------\n"
+}
+
+run_web_scans() {
     local output_dir="$1"
-    shift
-    local targets_array=("$@")
 
-    echo -e "${YELLOW}Starting CrackMapExec for SMBv1 detection.${NC}\n"
-    local target_list=""
-    if [[ "${#targets_array[@]}" -gt 0 ]]; then
-        target_list="${targets_array[*]}"
-    fi
+    echo -e "${YELLOW}Starting SSLScan and SSH-Audit.${NC}\n"
 
-    if [[ -n "$target_list" ]]; then
-        crackmapexec smb -p 445 "$target_list" | grep SMBv1:True > "$output_dir/smbv1.txt"
-        if [[ -s "$output_dir/smbv1.txt" ]]; then
-            echo -e "${GREEN}CrackMapExec found SMBv1 enabled.${NC}"
+    if [[ -f "$output_dir/nmap/SSLCipher.gnmap" ]]; then
+        local ssl_targets=$(awk '/Host: / && /Ports:.*443\/open/ {print $2}' "$output_dir/nmap/SSLCipher.gnmap")
+        if [[ -n "$ssl_targets" ]]; then
+            echo -e "${GREEN}Found targets with port 443 open. Starting SSLScan...${NC}"
+            for target in $ssl_targets; do
+                run_sslscan "$target" "$output_dir" &
+            done
         else
-            echo -e "${RED}No SMBv1 enabled hosts found.${NC}\n"
+            echo -e "${YELLOW}No targets with port 443 open found. Skipping SSLScan.${NC}\n"
         fi
     else
-        echo -e "${RED}No targets provided for CrackMapExec. Skipping.${NC}"
+        echo -e "${RED}Nmap SSLCipher scan result not found. Skipping SSLScan.${NC}\n"
     fi
 
-    echo -e "${BLUE}CrackMapExec SMBv1 detection completed.${NC}\n"
-
-    if [[ -s "$output_dir/rpc_targets.txt" ]]; then
-        echo -e "${YELLOW}Starting Unauthenticated RPC scan.${NC}\n"
-        mkdir -p "$output_dir/unauthrpc"
-        while IFS= read -r target_ip; do
-            echo -e "${GREEN}Attempting Unauthenticated RPC connection to $target_ip${NC}"
-            rpcclient -U "" -N "$target_ip" -c 'enumprivs' 2>&1 | tee "$output_dir/unauthrpc/${target_ip}.txt"
-            if grep -q -E "Cannot connect|NT_STATUS|failed|Connection to host failed" "$output_dir/unauthrpc/${target_ip}.txt"; then
-                echo -e "${RED}Connection to $target_ip failed.${NC}"
-            else
-                echo -e "${BLUE}Unauthenticated RPC connection to $target_ip successful.${NC}"
-            fi
-        done < "$output_dir/rpc_targets.txt"
-        echo -e "${BLUE}Unauthenticated RPC scan completed.${NC}\n"
+    if [[ -f "$output_dir/nmap/SSH.gnmap" ]]; then
+        local ssh_targets=$(awk '/Host: / && /Ports:.*22\/open/ {print $2}' "$output_dir/nmap/SSH.gnmap")
+        if [[ -n "$ssh_targets" ]]; then
+            echo -e "${GREEN}Found targets with port 22 open. Starting SSH-Audit...${NC}"
+            for target in $ssh_targets; do
+                run_ssh_audit "$target" "$output_dir" &
+            done
+        else
+            echo -e "${YELLOW}No targets with port 22 open found. Skipping SSH-Audit.${NC}\n"
+        fi
     else
-        echo -e "${YELLOW}No RPC targets found. Skipping Unauthenticated RPC scan.${NC}\n"
+        echo -e "${RED}Nmap SSH scan result not found. Skipping SSH-Audit.${NC}\n"
     fi
+
+    wait
+    echo -e "${BLUE}SSLScan and SSH-Audit scans completed.${NC}\n"
 }
