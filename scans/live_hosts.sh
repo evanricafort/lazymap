@@ -9,7 +9,7 @@ run_live_host_check() {
     local temp_file="$output_dir/nmap/live_hosts_raw.txt"
     mkdir -p "$(dirname "$temp_file")"
 
-    nmap -sn --disable-arp-ping -p 22,80,443,135,445 -n --max-retries=0 -T4 -v --reason -oN "$temp_file" "${targets_array[@]}"
+    nmap -sn -v --reason -oN "$temp_file" "${targets_array[@]}"
 
     local live_hosts=()
     while read -r ip; do
