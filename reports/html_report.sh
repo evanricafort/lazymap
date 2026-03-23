@@ -53,6 +53,34 @@ create_collapsible_section() {
     echo -e "$output"
 }
 
+create_individual_file_sections() {
+    local path="$1"
+    local glob_pattern="$2"
+
+    if [[ -d "$path" ]]; then
+        # Check if any files exist before starting loop
+        if [[ -z "$(find "$path" -type f -name "$glob_pattern" -print -quit)" ]]; then
+             echo "<p class='note'>No files found in this directory.</p>"
+             return
+        fi
+
+        # Iterate through files individually
+        while read -r file; do
+            local filename=$(basename "$file")
+
+            echo "<details>"
+            echo "<summary>$filename</summary>"
+            echo "<pre>"
+            # Escape HTML characters to treat output as RAW text and prevent macro/script execution
+            sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' "$file"
+            echo "</pre>"
+            echo "</details>"
+        done < <(find "$path" -type f -name "$glob_pattern" | sort)
+    else
+        echo "<p class='note'>Directory not found: $path</p>"
+    fi
+}
+
 generate_html_report() {
     local output_dir=$1
     local start_date=$2
@@ -188,7 +216,7 @@ $(
 
 $(
     echo "<h3>Nmap Scan Outputs</h3>"
-    create_collapsible_section "Nmap Scans" "$output_dir/nmap" "*.txt"
+    create_individual_file_sections "$output_dir/nmap" "*.txt"
 
     echo "<h3>Metasploit Scan Outputs</h3>"
     create_collapsible_section "Metasploit - RDP" "$output_dir/msfrdp" "*.txt"
