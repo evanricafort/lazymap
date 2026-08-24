@@ -20,7 +20,7 @@
 │   ├── mitm6.sh - IPv6 DNS Takeover test using mitm6 and impacket-ntlmrelayx.
 │   ├── metasploit.sh - Runs Metasploit scans for RDP, RPC, Oracle, NTP, SNMP, AFP and Kerberos username enumeration.
 │   ├── nmap.sh - Manages all Nmap scans.
-│   ├── pret.sh - Manages PRET printer security checks.
+│   ├── pret.sh - Installs PRET automatically and runs printer security checks.
 │   ├── smb.sh - Contains crackmapexec for SMBv1 scan and Unauthenticated RPC scans.
 │   └── web.sh - Handles web and SSH related scans.
 ├── reports

@@ -165,6 +165,7 @@ $(
     report_row "LDAP Anonymous Bind" "$output_dir/ldap_anonymous_bind" "Results of anonymous bind attempts."
     report_row "DNS Vulnerabilities" "$output_dir/dnssec" "DNSSec and recursion tests."
     report_row "IPv6 DNS Takeover (mitm6)" "$output_dir/mitm6" "DHCPv6/DNS spoofing and NTLM relay results."
+    report_row "Printer Security (PRET)" "$output_dir/pret" "Printer discovery and exposure check."
     report_row "Unauthenticated RPC" "$output_dir/unauthrpc" "Results of unauthenticated RPC connections."
     report_row "Metasploit - RDP" "$output_dir/msfrdp" "RDP scan outputs."
     report_row "Metasploit - RPC" "$output_dir/msfrpc" "RPC scan outputs."
@@ -242,6 +243,9 @@ $(
 
     echo "<h3>DNS Scan Outputs</h3>"
     create_collapsible_section "DNS Vulnerabilities" "$output_dir/dnssec" "*.txt"
+
+    echo "<h3>Printer Security (PRET)</h3>"
+    create_collapsible_section "PRET" "$output_dir/pret" "*.txt"
 
     echo "<h3>IPv6 DNS Takeover (mitm6)</h3>"
     create_collapsible_section "mitm6 - relayed accounts" "$output_dir/mitm6/relayed_accounts.txt"

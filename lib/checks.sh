@@ -37,6 +37,11 @@ collect_missing_tools() {
             tool_present "$tool" || echo "$tool"
         done
     fi
+    if opt_true pret; then
+        for tool in "${PRET_TOOLS[@]}"; do
+            tool_present "$tool" || echo "$tool"
+        done
+    fi
 }
 
 report_missing_tools() {
@@ -57,6 +62,7 @@ check_dependencies() {
 
     if [[ ${#missing[@]} -eq 0 ]]; then
         resolve_crackmapexec
+        ensure_pret_ready
         return 0
     fi
 
@@ -101,7 +107,27 @@ check_dependencies() {
     fi
 
     resolve_crackmapexec
+    ensure_pret_ready
     echo -e "${GREEN}All dependencies satisfied. Continuing.${NC}\n"
+}
+
+# PRET is only needed for --pret. It installs into the lazymap directory rather
+# than the system, so it is set up automatically instead of behind a prompt.
+ensure_pret_ready() {
+    opt_true pret || return 0
+    if pret_installed; then
+        return 0
+    fi
+    echo -e "\n${BLUE}------------------------------------------------------${NC}"
+    echo -e "${GREEN}--pret was requested; setting PRET up now${NC}"
+    echo -e "${BLUE}------------------------------------------------------${NC}"
+    if install_pret; then
+        echo -e "${BLUE}------------------------------------------------------${NC}\n"
+        return 0
+    fi
+    echo -e "${YELLOW}PRET could not be installed. The printer check will be skipped.${NC}"
+    echo -e "${BLUE}------------------------------------------------------${NC}\n"
+    return 0
 }
 
 # Install dependencies and exit, used by --install-deps with no targets.
@@ -110,6 +136,7 @@ run_install_deps_only() {
     read_lines_into missing < <(collect_missing_tools)
 
     if [[ ${#missing[@]} -eq 0 ]]; then
+        ensure_pret_ready
         echo -e "${GREEN}All dependencies are already installed. Nothing to do.${NC}\n"
         exit 0
     fi
@@ -123,6 +150,7 @@ run_install_deps_only() {
         report_missing_tools "${still_missing[@]}"
         exit 1
     fi
+    ensure_pret_ready
     echo -e "${GREEN}All dependencies installed.${NC}\n"
     exit 0
 }

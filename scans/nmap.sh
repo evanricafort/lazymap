@@ -130,7 +130,7 @@ run_nmap_scans() {
 
         nmap $script_args -v --reason -oN "$nmap_output_file" -iL "$targets_file"
 
-        if [[ "$script_name" == "SMB" || "$script_name" == "Kerberos" || "$script_name" == "Oracle" || "$script_name" == "RDP" || "$script_name" == "RPC" || "$script_name" == "AFP" || "$script_name" == "NTP" || "$script_name" == "LDAP" || "$script_name" == "DNS" || "$script_name" == "SNMP" || "$script_name" == "SSH" || "$script_name" == "SSLCipher" ]]; then
+        if [[ "$script_name" == "SMB" || "$script_name" == "PJL" || "$script_name" == "Kerberos" || "$script_name" == "Oracle" || "$script_name" == "RDP" || "$script_name" == "RPC" || "$script_name" == "AFP" || "$script_name" == "NTP" || "$script_name" == "LDAP" || "$script_name" == "DNS" || "$script_name" == "SNMP" || "$script_name" == "SSH" || "$script_name" == "SSLCipher" ]]; then
             nmap -sV -oG "$output_dir/nmap/${script_name}.gnmap" -iL "$targets_file"
         fi
 

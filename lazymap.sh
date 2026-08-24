@@ -237,7 +237,7 @@ main() {
     fi
 
     if opt_true pret; then
-        run_step "pret" "PRET printer check" run_pret_scan "$output_dir"
+        run_pret_scan "$output_dir"
     fi
 
     end_date=$(date)

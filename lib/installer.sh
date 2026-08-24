@@ -20,6 +20,9 @@ REQUIRED_TOOLS=(nmap crackmapexec ssh-audit sslscan wget dig ldapsearch msfconso
 # --install-deps installs them too when the matching test is requested.
 OPTIONAL_TOOLS=(mitm6 impacket-ntlmrelayx)
 
+# PRET is fetched from GitHub rather than packaged, and needs these to build.
+PRET_TOOLS=(git python3)
+
 detect_pkg_manager() {
     if [[ -n "$PKG_MGR" ]]; then return 0; fi
 
@@ -252,4 +255,99 @@ install_missing_tools() {
     fi
     echo -e "${BLUE}------------------------------------------------------${NC}\n"
     return 0
+}
+
+
+# ---------------------------------------------------------------------------
+# PRET (Printer Exploitation Toolkit)
+#
+# Not packaged by any distribution, so it is cloned into the lazymap directory
+# and given its own virtualenv. Installed up front when --pret is used, so a
+# failure surfaces before the scan runs rather than hours later.
+# ---------------------------------------------------------------------------
+
+pret_dir() {
+    printf '%s' "$LAZYMAP_DIR/pret_tool"
+}
+
+# Interpreter recorded at install time; the venv one when it exists.
+pret_python() {
+    local dir
+    dir="$(pret_dir)"
+    if [ -x "$dir/.venv/bin/python" ]; then
+        printf '%s' "$dir/.venv/bin/python"
+    else
+        printf 'python3'
+    fi
+}
+
+pret_installed() {
+    local dir
+    dir="$(pret_dir)"
+    [ -f "$dir/pret.py" ] || return 1
+    "$(pret_python)" -c 'import colorama, requests, npyscreen' >/dev/null 2>&1
+}
+
+# install_pret -> 0 when PRET is ready to run
+install_pret() {
+    local dir
+    dir="$(pret_dir)"
+
+    if pret_installed; then
+        echo -e "${GREEN}PRET is already installed at ${dir}.${NC}"
+        return 0
+    fi
+
+    echo -e "${GREEN}  → Setting up PRET (Printer Exploitation Toolkit)...${NC}"
+
+    if ! command -v git >/dev/null 2>&1; then
+        echo -e "${RED}  ✗ 'git' is required to fetch PRET.${NC}"
+        return 1
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo -e "${RED}  ✗ 'python3' is required to run PRET.${NC}"
+        return 1
+    fi
+
+    # Clone only when it is not already there; a re-clone into a populated
+    # directory fails, which is what the previous version did.
+    if [ ! -f "$dir/pret.py" ]; then
+        if [ -d "$dir" ] && [ -n "$(ls -A "$dir" 2>/dev/null)" ]; then
+            echo -e "${YELLOW}  ! ${dir} exists but has no pret.py. Remove it and re-run.${NC}"
+            return 1
+        fi
+        echo -e "${GREEN}    Cloning PRET into ${dir}${NC}"
+        if ! git clone --depth 1 https://github.com/RUB-NDS/PRET.git "$dir"; then
+            echo -e "${RED}  ✗ Failed to clone PRET. Check network access.${NC}"
+            return 1
+        fi
+    fi
+    chmod +x "$dir/pret.py" 2>/dev/null
+
+    # A virtualenv sidesteps PEP 668, which blocks pip on current Debian/Kali.
+    if [ ! -x "$dir/.venv/bin/python" ]; then
+        if python3 -m venv "$dir/.venv" >/dev/null 2>&1; then
+            echo -e "${GREEN}    Installing PRET dependencies into a virtualenv${NC}"
+            "$dir/.venv/bin/pip" install --quiet --upgrade pip >/dev/null 2>&1
+            "$dir/.venv/bin/pip" install --quiet colorama requests npyscreen >/dev/null 2>&1
+            # PRET uses the pysnmp 4.x API for printer discovery. That release
+            # needs asyncore, dropped in Python 3.12, so add the shim. SNMP
+            # discovery is optional: PRET still works against known targets.
+            "$dir/.venv/bin/pip" install --quiet 'pysnmp==4.4.12' >/dev/null 2>&1
+            "$dir/.venv/bin/python" -c 'import asyncore' >/dev/null 2>&1 || \
+                "$dir/.venv/bin/pip" install --quiet pyasyncore >/dev/null 2>&1
+        else
+            echo -e "${YELLOW}    venv unavailable, falling back to a user install${NC}"
+            python3 -m pip install --quiet --user colorama requests npyscreen 'pysnmp==4.4.12' >/dev/null 2>&1 || \
+            python3 -m pip install --quiet --user --break-system-packages colorama requests npyscreen 'pysnmp==4.4.12' >/dev/null 2>&1
+        fi
+    fi
+
+    if pret_installed; then
+        echo -e "${GREEN}  ✓ PRET is ready (${dir}).${NC}"
+        return 0
+    fi
+
+    echo -e "${RED}  ✗ PRET dependencies (colorama, requests, npyscreen) could not be installed.${NC}"
+    return 1
 }

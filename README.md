@@ -70,6 +70,27 @@ git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmo
 
 Note: Run in sudo mode to execute NMAP scripts related to UDP scan and Responder.
 
+# Printer Security Check (PRET)
+
+`--pret` sets PRET up automatically before the scan starts - it is cloned into
+`pret_tool/` inside the lazymap directory and given its own virtualenv, so the
+dependencies do not touch system Python and PEP 668 does not block them. The
+setup happens during the dependency phase, so a failure shows up immediately
+instead of after the scan has been running for an hour.
+
+```
+sudo ./lazymap.sh -t hosts --pret
+```
+
+Printers are taken from the nmap PJL scan (port 9100), like every other module
+takes its targets from the nmap output, and PRET is driven with a file of
+read-only PJL commands so it cannot hang waiting on its interactive prompt. If
+no printer is found on 9100, it falls back to PRET's own local discovery.
+Output goes to `<output_dir>/pret/`.
+
+If PRET cannot be installed, the printer check is skipped with a warning and the
+rest of the scan and the HTML report still complete.
+
 # IPv6 DNS Takeover (mitm6)
 
 Windows prefers IPv6 over IPv4 and has it enabled by default, so a rogue DHCPv6
