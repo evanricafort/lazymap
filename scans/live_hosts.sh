@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
+source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
 
 # Discovers live hosts. Only the discovered IPs go to stdout - every status
 # message and the nmap output go to stderr so the caller can safely capture
-# the result with mapfile.
+# the result without a pipeline subshell.
 run_live_host_check() {
     local output_dir=$1
     shift
@@ -19,7 +20,7 @@ run_live_host_check() {
     local live_hosts=()
     while read -r ip; do
         if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            live_hosts+=("$ip")
+            arr_push live_hosts "$ip"
         fi
     done < <(grep "Nmap scan report for" "$temp_file" | awk '{print $NF}' | tr -d '()')
 
@@ -56,12 +57,12 @@ run_live_host_scans() {
     # On resume, reuse the host list discovered by the interrupted run.
     if step_completed "live_hosts" && [[ -s "$output_dir/live_hosts.txt" ]]; then
         skip_notice "live_hosts" "live host discovery"
-        mapfile -t TARGETS < "$output_dir/live_hosts.txt"
+        read_lines_into TARGETS < "$output_dir/live_hosts.txt"
         echo -e "${GREEN}Reusing ${#TARGETS[@]} live host(s) from the previous run.${NC}\n"
         return 0
     fi
 
-    mapfile -t TARGETS < <(run_live_host_check "$output_dir" "${TARGETS[@]}")
+    read_lines_into TARGETS < <(run_live_host_check "$output_dir" "${TARGETS[@]}")
 
     if [[ ${#TARGETS[@]} -gt 0 ]]; then
         mark_completed "live_hosts"

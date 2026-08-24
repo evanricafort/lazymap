@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
 
 report_row() {

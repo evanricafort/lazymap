@@ -137,9 +137,9 @@ build_resume_hint() {
     for a in "${args[@]}"; do
         if [[ "$a" == "--resume" ]]; then continue; fi
         if [[ "$a" =~ [[:space:]] ]]; then
-            out+=" '$a'"
+            out="$out '$a'"
         else
-            out+=" $a"
+            out="$out $a"
         fi
     done
     RESUME_HINT="sudo ./lazymap.sh${out} --resume"

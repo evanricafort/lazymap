@@ -19,7 +19,7 @@ lazymap is a single command-line tool for network penetration testing. it combin
 
 # Requirements
 
-- Bash version 4 or higher
+- Bash 3.0 or higher (works with the Bash 3.2 that ships with macOS)
 - nmap
 - curl
 - dig

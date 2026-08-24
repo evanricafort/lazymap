@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-# lazymap uses associative arrays and mapfile, which need Bash 4 or newer.
-if [[ -z "${BASH_VERSINFO[0]}" || "${BASH_VERSINFO[0]}" -lt 4 ]]; then
-    echo "Error: lazymap requires Bash 4 or higher (found ${BASH_VERSION:-unknown})." >&2
-    echo "       On macOS, install a newer Bash with 'brew install bash'." >&2
+# lazymap runs on Bash 3.0 and newer, including the 3.2 shipped by macOS.
+if [ -z "${BASH_VERSINFO[0]}" ] || [ "${BASH_VERSINFO[0]}" -lt 3 ]; then
+    echo "Error: lazymap requires Bash 3.0 or newer (found ${BASH_VERSION:-unknown})." >&2
     exit 1
 fi
 
@@ -14,11 +13,11 @@ export LAZYMAP_DIR
 start_time=$(date +%s)
 start_date=$(date)
 output_dir="results"
-declare -a TARGETS
-declare -A OPTIONS
+TARGETS=()
 discord_webhook=""
 RESUME_HINT="sudo ./lazymap.sh --resume"
 
+source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
 source "$LAZYMAP_DIR/lib/state.sh"
 source "$LAZYMAP_DIR/lib/installer.sh"
@@ -37,12 +36,12 @@ source "$LAZYMAP_DIR/reports/send_discord_webhook.sh"
 source "$LAZYMAP_DIR/scans/live_hosts.sh"
 
 handle_discord_webhook() {
-    if [[ "${OPTIONS[send_to_discord]}" == true ]]; then
+    if opt_true send_to_discord; then
         echo -e "${YELLOW}Please enter the Discord webhook URL:${NC}"
         read -r discord_webhook
         if [[ -z "$discord_webhook" ]]; then
             echo -e "${RED}Error: No Discord webhook URL provided. Aborting Discord report send.${NC}"
-            unset OPTIONS[send_to_discord]
+            opt_unset send_to_discord
         fi
     fi
 }
@@ -104,19 +103,19 @@ main() {
                     exit 1
                 fi
                 single_target=$2; shift 2 ;;
-            -1 ) OPTIONS[vulners]=true; shift ;;
-            -2 ) OPTIONS[vuln]=true; shift ;;
-            -3 ) OPTIONS[vulners]=true; OPTIONS[vuln]=true; shift ;;
-            -4 ) OPTIONS[firewall_evasion]=true; shift ;;
-            -a ) OPTIONS[exclude_allports]=true; shift ;;
-            -n ) OPTIONS[add_nT4]=true; shift ;;
-            -k ) OPTIONS[exclude_web_scans]=true; shift ;;
-            -b ) OPTIONS[add_A_minrate_open]=true; shift ;;
+            -1 ) opt_set vulners true; shift ;;
+            -2 ) opt_set vuln true; shift ;;
+            -3 ) opt_set vulners true; opt_set vuln true; shift ;;
+            -4 ) opt_set firewall_evasion true; shift ;;
+            -a ) opt_set exclude_allports true; shift ;;
+            -n ) opt_set add_nT4 true; shift ;;
+            -k ) opt_set exclude_web_scans true; shift ;;
+            -b ) opt_set add_A_minrate_open true; shift ;;
             -o ) output_dir=$2; shift 2 ;;
-            --pret ) OPTIONS[pret]=true; shift ;;
-            --interface ) OPTIONS[responder_interface]=$2; shift 2 ;;
-            --exclude-udp ) OPTIONS[exclude_udp]=true; shift ;;
-            --discord ) OPTIONS[send_to_discord]=true; shift ;;
+            --pret ) opt_set pret true; shift ;;
+            --interface ) opt_set responder_interface "$2"; shift 2 ;;
+            --exclude-udp ) opt_set exclude_udp true; shift ;;
+            --discord ) opt_set send_to_discord true; shift ;;
             --resume ) RESUME_MODE=true; shift ;;
             --install-deps ) AUTO_INSTALL=true; shift ;;
             -y | --yes ) ASSUME_YES=true; shift ;;
@@ -141,13 +140,13 @@ main() {
             echo -e "${RED}Error: Targets file '$targets_file' not found!${NC}"
             exit 1
         fi
-        readarray -t TARGETS < "$targets_file"
+        read_lines_into TARGETS < "$targets_file"
         # Drop blank lines and comments so they never reach nmap.
         local cleaned=()
         for t in "${TARGETS[@]}"; do
             t="${t//$'\r'/}"
             [[ -z "${t// /}" || "$t" == \#* ]] && continue
-            cleaned+=("$t")
+            arr_push cleaned "$t"
         done
         TARGETS=("${cleaned[@]}")
         if [[ ${#TARGETS[@]} -eq 0 ]]; then
@@ -155,7 +154,7 @@ main() {
             exit 1
         fi
     elif [[ -n "$single_target" ]]; then
-        TARGETS+=("$single_target")
+        arr_push TARGETS "$single_target"
     else
         echo -e "${RED}Error: No targets specified. Use -h for help.${NC}"
         exit 1
@@ -179,8 +178,8 @@ main() {
 
     handle_discord_webhook
 
-    if [[ -n "${OPTIONS[responder_interface]}" ]]; then
-        run_responder "${OPTIONS[responder_interface]}" "$output_dir" &
+    if [ -n "$(opt_get responder_interface)" ]; then
+        run_responder "$(opt_get responder_interface)" "$output_dir" &
     fi
 
     if [[ "${#TARGETS[@]}" -gt 1 ]] || [[ "${TARGETS[0]}" == *"/"* ]]; then
@@ -191,7 +190,7 @@ main() {
 
     check_for_live_hosts_and_exit
 
-    if [[ "${OPTIONS[firewall_evasion]}" == true ]]; then
+    if opt_true firewall_evasion; then
         echo -e "${YELLOW}Starting Firewall Evasion Scans.${NC}\n"
         run_firewall_evasion_scans "$output_dir"
         echo -e "${BLUE}Firewall evasion scans completed.${NC}"
@@ -203,7 +202,7 @@ main() {
 
     run_nmap_scans "$output_dir"
 
-    if [[ "${OPTIONS[exclude_web_scans]}" != true ]]; then
+    if ! opt_true exclude_web_scans; then
         run_web_scans "$output_dir" "${TARGETS[@]}"
     fi
 
@@ -215,14 +214,14 @@ main() {
 
     run_dns_scan "$output_dir"
 
-    if [[ "${OPTIONS[pret]}" == true ]]; then
+    if opt_true pret; then
         run_step "pret" "PRET printer check" run_pret_scan "$output_dir"
     fi
 
     end_date=$(date)
     generate_html_report "$output_dir" "$start_date" "$end_date"
 
-    if [[ "${OPTIONS[send_to_discord]}" == true && -n "$discord_webhook" ]]; then
+    if opt_true send_to_discord && [ -n "$discord_webhook" ]; then
         send_discord_webhook "$output_dir" "$discord_webhook" "$start_date"
     fi
 

@@ -3,6 +3,7 @@
 # lib/installer.sh
 # Detects the system package manager and installs missing dependencies.
 
+source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
 
 PKG_MGR=""
@@ -219,10 +220,10 @@ install_missing_tools() {
     local tool
     for tool in "${missing[@]}"; do
         if install_tool "$tool"; then
-            installed+=("$tool")
+            arr_push installed "$tool"
             echo -e "${GREEN}  ✓ '$tool' is now available.${NC}\n"
         else
-            failed+=("$tool")
+            arr_push failed "$tool"
             echo -e "${RED}  ✗ Failed to install '$tool'.${NC}\n"
         fi
     done

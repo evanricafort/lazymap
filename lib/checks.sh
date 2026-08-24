@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
 source "$LAZYMAP_DIR/lib/installer.sh"
 
@@ -46,7 +47,7 @@ report_missing_tools() {
 
 check_dependencies() {
     local missing=()
-    mapfile -t missing < <(collect_missing_tools)
+    read_lines_into missing < <(collect_missing_tools)
 
     if [[ ${#missing[@]} -eq 0 ]]; then
         resolve_crackmapexec
@@ -69,9 +70,8 @@ check_dependencies() {
         reply="${reply//$'\r'/}"
         reply="${reply#"${reply%%[![:space:]]*}"}"
         reply="${reply%"${reply##*[![:space:]]}"}"
-        shopt -s nocasematch
-        [[ "$reply" == "y" || "$reply" == "yes" ]] && do_install=true
-        shopt -u nocasematch
+        reply="$(to_lower "$reply")"
+        if [ "$reply" = "y" ] || [ "$reply" = "yes" ]; then do_install=true; fi
     else
         echo -e "${YELLOW}Re-run with --install-deps to install them automatically.${NC}"
     fi
@@ -87,7 +87,7 @@ check_dependencies() {
 
     # Confirm nothing is still missing after the install pass.
     local still_missing=()
-    mapfile -t still_missing < <(collect_missing_tools)
+    read_lines_into still_missing < <(collect_missing_tools)
     if [[ ${#still_missing[@]} -gt 0 ]]; then
         report_missing_tools "${still_missing[@]}"
         echo -e "${RED}Cannot continue.${NC}\n"
@@ -101,7 +101,7 @@ check_dependencies() {
 # Install dependencies and exit, used by --install-deps with no targets.
 run_install_deps_only() {
     local missing=()
-    mapfile -t missing < <(collect_missing_tools)
+    read_lines_into missing < <(collect_missing_tools)
 
     if [[ ${#missing[@]} -eq 0 ]]; then
         echo -e "${GREEN}All dependencies are already installed. Nothing to do.${NC}\n"
@@ -112,7 +112,7 @@ run_install_deps_only() {
     install_missing_tools "${missing[@]}" || exit 1
 
     local still_missing=()
-    mapfile -t still_missing < <(collect_missing_tools)
+    read_lines_into still_missing < <(collect_missing_tools)
     if [[ ${#still_missing[@]} -gt 0 ]]; then
         report_missing_tools "${still_missing[@]}"
         exit 1

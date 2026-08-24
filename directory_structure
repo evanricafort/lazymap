@@ -5,6 +5,8 @@
 │   └── responder.sh - Manages the execution of Responder.
 ├── lib
 │   ├── checks.sh - Functions for checking dependencies and input validation.
+│   ├── compat.sh - Bash 3.x compatibility helpers (option store, ordered tables, array utils).
+│   ├── installer.sh - Detects the package manager and installs missing tools.
 │   ├── colors.sh - Handles the output colors.
 │   ├── help.sh - Displays the help message.
 │   └── state.sh - Resume state tracking, run time reporting and interrupt handling.
