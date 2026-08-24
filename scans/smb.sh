@@ -11,7 +11,7 @@ run_smbv1_scan() {
     local smb_txt="$output_dir/nmap/SMB.txt"
     local targets="$output_dir/smb_targets.txt"
 
-    echo -e "${YELLOW}Starting SMBv1 check using crackmapexec.${NC}\n"
+    echo -e "${YELLOW}Starting SMBv1 check using ${CME_BIN:-crackmapexec}.${NC}\n"
 
     if [[ -f "$smb_gnmap" ]]; then
         awk '/^Host: / && /Ports:.*(139|445)\/open/ {print $2}' "$smb_gnmap" | sort -u > "$targets"
@@ -29,7 +29,7 @@ run_smbv1_scan() {
         return 0
     fi
 
-    crackmapexec smb "$targets" 2>&1 | tee "$output_dir/smbv1.txt"
+    "${CME_BIN:-crackmapexec}" smb "$targets" 2>&1 | tee "$output_dir/smbv1.txt"
 
     if grep -qi "SMBv1:True" "$output_dir/smbv1.txt" 2>/dev/null; then
         echo -e "${BLUE}SMBv1 enabled host(s) detected. See $output_dir/smbv1.txt${NC}\n"

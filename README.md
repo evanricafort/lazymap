@@ -29,6 +29,10 @@ lazymap is a single command-line tool for network penetration testing. it combin
 - sslscan
 - ssh-audit
 - screen
+
+Note: CrackMapExec is now distributed as NetExec. lazymap uses `crackmapexec`
+when present and otherwise falls back to the `nxc` command, so either one
+satisfies the dependency check.
   
 # Installation
 

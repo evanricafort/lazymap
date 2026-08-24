@@ -9,17 +9,22 @@ check_command() {
     fi
 }
 
-# CrackMapExec was renamed to NetExec (nxc). Accept either.
+# CrackMapExec was renamed to NetExec, and current distributions ship the
+# 'nxc' binary instead. Resolve whichever is present into CME_BIN so callers
+# invoke it explicitly rather than relying on a shadowed command name.
+CME_BIN=""
+
 resolve_crackmapexec() {
     if command -v crackmapexec &>/dev/null; then
-        return 0
+        CME_BIN="crackmapexec"
     elif command -v nxc &>/dev/null; then
-        echo -e "${YELLOW}Note: 'crackmapexec' not found, using 'nxc' (NetExec) instead.${NC}"
-        crackmapexec() { nxc "$@"; }
-        return 0
+        CME_BIN="nxc"
+        echo -e "${YELLOW}Note: 'crackmapexec' not found. Using 'nxc' (NetExec), its current name.${NC}"
+    else
+        echo -e "${RED}Error: crackmapexec is not installed. Please install it before running the script.${NC}"
+        echo -e "${RED}       It is now distributed as NetExec - 'pipx install netexec' provides the 'nxc' command.${NC}"
+        exit 1
     fi
-    echo -e "${RED}Error: crackmapexec (or nxc) is not installed. Please install it before running the script.${NC}"
-    exit 1
 }
 
 check_dependencies() {
