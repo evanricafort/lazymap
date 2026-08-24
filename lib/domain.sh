@@ -18,10 +18,11 @@ resolve_ad_domain() {
         return 0
     fi
 
-    # LDAP rootDSE: "defaultNamingContext: DC=corp,DC=local" -> corp.example.com
+    # Recover the realm from the LDAP rootDSE naming context.
     if [ -f "$output_dir/nmap/LDAP.txt" ]; then
-        # "DC=corp,DC=local" -> "corp.example.com". Strip the label first: a
-        # greedy .*DC= would match the last component and drop the rest.
+        # Turn the comma-separated DC components into a dotted realm. The label
+        # is stripped first: a greedy .*DC= would match the last component and
+        # drop everything before it.
         domain=$(grep -iaoE '(default|rootDomain)NamingContext: *DC=[^ ]+' "$output_dir/nmap/LDAP.txt" \
                  | head -n1 \
                  | sed -E 's/^.*[Nn]aming[Cc]ontext: *//' \
@@ -33,7 +34,7 @@ resolve_ad_domain() {
         fi
     fi
 
-    # smb-os-discovery / nbstat: "Domain name: corp.example.com"
+    # Fall back to the domain name reported by smb-os-discovery or nbstat.
     local f
     for f in "$output_dir/nmap/SMB.txt" "$output_dir/nmap/NetBIOS.txt" "$output_dir/nmap/Kerberos.txt"; do
         [ -f "$f" ] || continue
