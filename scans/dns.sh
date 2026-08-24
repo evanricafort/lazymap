@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "lib/colors.sh"
+source "$LAZYMAP_DIR/lib/colors.sh"
 
 run_dns_scan() {
     local output_dir=$1
@@ -12,6 +12,10 @@ run_dns_scan() {
         if [[ -n "$ips_with_port_53_open" ]]; then
             mkdir -p "$output_dir/dnssec"
             for ip in $ips_with_port_53_open; do
+                if step_completed "dns:$ip"; then
+                    skip_notice "dns:$ip" "DNS check on $ip"
+                    continue
+                fi
                 echo -e "\n${GREEN}Running 'dig +dnssec' on $ip${NC}"
 
                 dig_output=$(dig +dnssec "$ip")
@@ -26,6 +30,7 @@ run_dns_scan() {
                     echo "$dig_output" | tee "$output_dir/dnssec/${ip}_dnssec_scan.txt"
                     echo -e "${BLUE}No DNS vulnerabilities found for $ip.${NC}\n"
                 fi
+                mark_completed "dns:$ip"
                 echo -e "\n--------------------------------\n"
             done
         else

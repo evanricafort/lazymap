@@ -6,7 +6,8 @@
 ├── lib
 │   ├── checks.sh - Functions for checking dependencies and input validation.
 │   ├── colors.sh - Handles the output colors.
-│   └── help.sh - Displays the help message.
+│   ├── help.sh - Displays the help message.
+│   └── state.sh - Resume state tracking, run time reporting and interrupt handling.
 │── scans
 │   ├── live_hosts.sh - Handles live host discovery to find online targets for scans.
 │   ├── dns.sh - Conducts DNS related vulnerability checks.
@@ -17,4 +18,5 @@
 │   ├── smb.sh - Contains crackmapexec for SMBv1 scan and Unauthenticated RPC scans.
 │   └── web.sh - Handles web and SSH related scans.
 ├── reports
-    └── html_report.sh - Generates an HTML report from overall scan results.
+    ├── html_report.sh - Generates an HTML report from overall scan results.
+    └── send_discord_webhook.sh - Sends the zipped results to a Discord webhook.

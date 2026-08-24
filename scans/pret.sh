@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "lib/colors.sh"
+source "$LAZYMAP_DIR/lib/colors.sh"
 
 run_pret_scan() {
     local output_dir=$1

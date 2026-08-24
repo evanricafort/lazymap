@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "lib/colors.sh"
+source "$LAZYMAP_DIR/lib/colors.sh"
 
 run_nmap_scans() {
     local output_dir="$1"
@@ -75,7 +75,7 @@ run_nmap_scans() {
         additional_nmap_scripts+=("vuln")
     fi
 
-    if [[ -n "$additional_nmap_scripts" ]]; then
+    if [[ ${#additional_nmap_scripts[@]} -gt 0 ]]; then
         for key in "${!scripts[@]}"; do
             scripts[$key]+=" --script ${additional_nmap_scripts[*]}"
         done
@@ -98,6 +98,11 @@ run_nmap_scans() {
     for script_name in "${ordered_scripts[@]}"; do
         if [[ -z "${scripts[$script_name]}" ]]; then continue; fi
 
+        if step_completed "nmap:$script_name"; then
+            skip_notice "nmap:$script_name" "${script_name} nmap scan"
+            continue
+        fi
+
         script_args="${scripts[$script_name]}"
         echo -e "${GREEN}Starting ${script_name} scan.${NC}"
 
@@ -105,10 +110,11 @@ run_nmap_scans() {
 
         nmap $script_args -v --reason -oN "$nmap_output_file" -iL "$targets_file"
 
-        if [[ "$script_name" == "Oracle" || "$script_name" == "RDP" || "$script_name" == "RPC" || "$script_name" == "AFP" || "$script_name" == "NTP" || "$script_name" == "LDAP" || "$script_name" == "DNS" || "$script_name" == "SNMP" || "$script_name" == "SSH" || "$script_name" == "SSLCipher" ]]; then
+        if [[ "$script_name" == "SMB" || "$script_name" == "Oracle" || "$script_name" == "RDP" || "$script_name" == "RPC" || "$script_name" == "AFP" || "$script_name" == "NTP" || "$script_name" == "LDAP" || "$script_name" == "DNS" || "$script_name" == "SNMP" || "$script_name" == "SSH" || "$script_name" == "SSLCipher" ]]; then
             nmap -sV -oG "$output_dir/nmap/${script_name}.gnmap" -iL "$targets_file"
         fi
 
+        mark_completed "nmap:$script_name"
         echo -e "${GREEN}Completed ${script_name} scan. Output saved to ${nmap_output_file}.${NC}\n"
     done
 
@@ -122,7 +128,7 @@ run_firewall_evasion_scans() {
 
     declare -A firewall_evasion_scripts=(
         ["FragmentPackets"]='-f'
-        ["MTU"]='-mtu 16'
+        ["MTU"]='--mtu 16'
         ["MACSpoofApple"]='-sT -PO --spoof-mac Apple -Pn'
         ["MACSpoofCisco"]='-sT -PO --spoof-mac Cisco -Pn'
         ["MACSpoofMicrosoft"]='-sT -PO --spoof-mac Microsoft -Pn'
@@ -139,12 +145,17 @@ run_firewall_evasion_scans() {
         ["BadChecksum"]='--badsum'
         ["ExoticFlag"]='-sF -p1-100 -T4'
         ["SourcePortCheck"]='-sSUC --script source-port -Pn'
-        ["SourcePort"]='-g -Pn'
+        ["SourcePort"]='-g 53 -Pn'
         ["ICMPEchoRequest"]='-n -sn -PE -T4'
         ["PacketTrace"]='-vv -n -sn -PE -T4 --packet-trace'
     )
 
-    for script_name in "${!firewall_evasion_scripts[@]}"; do
+    for script_name in $(printf '%s\n' "${!firewall_evasion_scripts[@]}" | sort); do
+        if step_completed "fw:$script_name"; then
+            skip_notice "fw:$script_name" "${script_name} firewall evasion scan"
+            continue
+        fi
+
         script_args="${firewall_evasion_scripts[$script_name]}"
         echo -e "${GREEN}Starting scan for ${script_name}.${NC}"
 
@@ -153,6 +164,7 @@ run_firewall_evasion_scans() {
 
         nmap $script_args -v --reason -oN "$nmap_output_file" -iL "$targets_file"
 
+        mark_completed "fw:$script_name"
         echo -e "${GREEN}Completed ${script_name} scan.${NC}\n"
     done
 }

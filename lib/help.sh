@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-source "lib/colors.sh"
+source "$LAZYMAP_DIR/lib/colors.sh"
 
 display_ascii_art() {
     echo -e "${GREEN}"
     echo " ████                                                                     "
-    echo "░░███                                                                     v0.8"
+    echo "░░███                                                                     v0.9"
     echo " ░███   ██████    █████████ █████ ████ █████████████    ██████   ████████ "
     echo " ░███  ░░░░░███  ░█░░░░███ ░░███ ░███ ░░███░░███░░███  ░░░░░███ ░░███░░███"
     echo " ░███   ███████  ░   ███░   ░███ ░███  ░███ ░███ ░███   ███████  ░███ ░███"
@@ -43,10 +43,15 @@ display_help() {
     echo -e "  ${YELLOW}--interface [iface]${NC} ${GREEN}to run Responder on a specified interface.${NC}"
     echo -e "  ${YELLOW}-o [dir]${NC} ${GREEN}to specify a custom output directory (default: results).${NC}"
     echo -e "  ${YELLOW}--exclude-udp${NC} ${GREEN}to exclude UDP scan.${NC}"
-    echo -e "  ${YELLOW}--discord [webhook]${NC} ${GREEN}to send the overall report to your discord server.${NC}"
+    echo -e "  ${YELLOW}--discord${NC} ${GREEN}to send the overall report to your discord server (prompts for the webhook URL).${NC}"
+    echo -e "  ${YELLOW}--resume${NC} ${GREEN}to continue an interrupted scan, skipping steps that already finished.${NC}"
     echo -e "  ${YELLOW}-h${NC} ${GREEN}to display this help message.${NC}"
     echo ""
     echo -e "${GREEN}- Example: ./lazymap.sh -t hosts -12bank --pret --exclude-udp --interface eth0 -o my_scan${NC}"
+    echo ""
+    echo -e "${GREEN}- Resume: If a scan is interrupted (Ctrl+C), re-run the same command with --resume${NC}"
+    echo -e "${GREEN}  and the same -o directory to pick up where it stopped. Example:${NC}"
+    echo -e "${GREEN}    ./lazymap.sh -t hosts -12bank -o my_scan --resume${NC}"
     echo ""
     echo -e "${GREEN}- Reminder: Option -3 may take some time to finish if you have multiple targets.${NC}"
     echo -e "${GREEN}- Note: Run in sudo mode to execute NMAP scripts related to UDP scan and Responder.${NC}"

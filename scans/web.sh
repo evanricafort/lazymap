@@ -3,15 +3,20 @@
 # scans/web.sh
 # Handles SSLScan and SSH-Audit for open ports 443 and 22.
 
-source "lib/colors.sh"
+source "$LAZYMAP_DIR/lib/colors.sh"
 
 run_sslscan() {
     local target=$1
     local output_dir=$2
     local output_file="$output_dir/sslscan/${target}_sslscan.txt"
     mkdir -p "$(dirname "$output_file")"
+    if step_completed "sslscan:$target"; then
+        skip_notice "sslscan:$target" "SSLScan on $target"
+        return 0
+    fi
     echo -e "${GREEN}Starting SSLScan on $target${NC}"
     sslscan --verbose "$target" | tee "$output_file"
+    mark_completed "sslscan:$target"
     echo -e "${GREEN}SSLScan on $target completed.${NC}"
     echo -e "\n--------------------------------\n"
 }
@@ -21,8 +26,13 @@ run_ssh_audit() {
     local output_dir=$2
     local output_file="$output_dir/sshaudit/${target}_sshaudit.txt"
     mkdir -p "$(dirname "$output_file")"
+    if step_completed "sshaudit:$target"; then
+        skip_notice "sshaudit:$target" "SSH-Audit on $target"
+        return 0
+    fi
     echo -e "${GREEN}Starting SSH-Audit on $target${NC}"
     ssh-audit -v "$target" | tee "$output_file"
+    mark_completed "sshaudit:$target"
     echo -e "${GREEN}SSH-Audit on $target completed.${NC}"
     echo -e "\n--------------------------------\n"
 }

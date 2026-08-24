@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "lib/colors.sh"
+source "$LAZYMAP_DIR/lib/colors.sh"
 
 send_discord_webhook() {
     local scan_dir=$1

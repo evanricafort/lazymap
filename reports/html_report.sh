@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "lib/colors.sh"
+source "$LAZYMAP_DIR/lib/colors.sh"
 
 report_row() {
     local scan_name="$1"
@@ -24,33 +24,32 @@ report_row() {
     echo "<tr><td>$scan_name</td><td style=\"color:$status_color;\">$status</td><td>$summary_text</td></tr>"
 }
 
+html_escape() {
+    sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'
+}
+
 create_collapsible_section() {
     local title="$1"
     local path="$2"
-    local glob_pattern="$3"
+    local glob_pattern="${3:-*}"
 
-    local output=""
     if [[ -d "$path" ]]; then
         local files_found=false
-        local content="<details><summary>$title</summary><pre>"
-
-        while read -r file; do
-            if [[ -f "$file" ]]; then
-                content+="---- File: $(basename "$file") ----\n"
-                content+="$(cat "$file")\n\n"
-                files_found=true
-            fi
-        done < <(find "$path" -type f -name "$glob_pattern")
-
-        if [[ "$files_found" == false ]]; then
-            content+="No files found in this directory.\n"
-        fi
-        content+="</pre></details>"
-        output="$content"
+        printf '<details><summary>%s</summary><pre>' "$title"
+        while IFS= read -r file; do
+            [[ -f "$file" ]] || continue
+            printf -- '---- File: %s ----\n' "$(basename "$file")"
+            html_escape < "$file"
+            printf '\n\n'
+            files_found=true
+        done < <(find "$path" -type f -name "$glob_pattern" | sort)
+        [[ "$files_found" == false ]] && printf 'No files found in this directory.\n'
+        printf '</pre></details>\n'
     elif [[ -f "$path" ]]; then
-        output="<details><summary>$title</summary><pre>$(cat "$path")</pre></details>"
+        printf '<details><summary>%s</summary><pre>' "$title"
+        html_escape < "$path"
+        printf '</pre></details>\n'
     fi
-    echo -e "$output"
 }
 
 create_individual_file_sections() {
@@ -167,7 +166,7 @@ $(
     report_row "Unauthenticated RPC" "$output_dir/unauthrpc" "Results of unauthenticated RPC connections."
     report_row "Metasploit - RDP" "$output_dir/msfrdp" "RDP scan outputs."
     report_row "Metasploit - RPC" "$output_dir/msfrpc" "RPC scan outputs."
-    report_row "Metasploit - Oracle" "$output_dir/msforacle" "Oracle database scan outputs."
+    report_row "Metasploit - Oracle" "$output_dir/msforacletnscmd" "Oracle database scan outputs."
     report_row "Metasploit - AFP" "$output_dir/msfafp" "AFP scan outputs."
     report_row "Metasploit - NTP" "$output_dir/msfntp" "NTP scan outputs."
     report_row "Metasploit - SNMP" "$output_dir/msfsnmp" "SNMP scan outputs."
@@ -221,7 +220,7 @@ $(
     echo "<h3>Metasploit Scan Outputs</h3>"
     create_collapsible_section "Metasploit - RDP" "$output_dir/msfrdp" "*.txt"
     create_collapsible_section "Metasploit - RPC" "$output_dir/msfrpc" "*.txt"
-    create_collapsible_section "Metasploit - Oracle" "$output_dir/msforacle" "*.txt"
+    create_collapsible_section "Metasploit - Oracle" "$output_dir/msforacletnscmd" "*.txt"
     create_collapsible_section "Metasploit - AFP" "$output_dir/msfafp" "*.txt"
     create_collapsible_section "Metasploit - NTP" "$output_dir/msfntp" "*.txt"
     create_collapsible_section "Metasploit - SNMP" "$output_dir/msfsnmp" "*.txt"

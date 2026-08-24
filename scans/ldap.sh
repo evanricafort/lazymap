@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "lib/colors.sh"
+source "$LAZYMAP_DIR/lib/colors.sh"
 
 run_ldap_scan() {
     local output_dir=$1
@@ -13,8 +13,13 @@ run_ldap_scan() {
         if [[ -s "$output_dir/ldap_open_ports.txt" ]]; then
             mkdir -p "$output_dir/ldap_anonymous_bind"
             while read -r ip; do
+                if step_completed "ldap:$ip"; then
+                    skip_notice "ldap:$ip" "LDAP Anonymous Bind on $ip"
+                    continue
+                fi
                 echo -e "${GREEN}Running LDAP Anonymous Bind scan on $ip${NC}"
                 ldapsearch -v -x -s base -b '' "(objectClass=*)" "*" + -H ldap://$ip | tee "$output_dir/ldap_anonymous_bind/${ip}.txt"
+                mark_completed "ldap:$ip"
                 echo -e "${BLUE}LDAP Anonymous Bind scan for $ip completed.${NC}\n"
             done < "$output_dir/ldap_open_ports.txt"
         else
