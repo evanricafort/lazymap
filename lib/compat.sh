@@ -45,6 +45,11 @@ to_lower() {
     printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
 }
 
+# to_upper <string> -> uppercase, without ${var^^}
+to_upper() {
+    printf '%s' "$1" | tr '[:lower:]' '[:upper:]'
+}
+
 # ---------------------------------------------------------------------------
 # Option store
 #

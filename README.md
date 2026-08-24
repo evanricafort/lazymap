@@ -70,6 +70,32 @@ git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmo
 
 Note: Run in sudo mode to execute NMAP scripts related to UDP scan and Responder.
 
+# Kerberos Domain Username Enumeration
+
+When a host exposes Kerberos on port 88, lazymap runs
+`auxiliary/gather/kerberos_enumusers` against it, the same way it runs the RDP,
+RPC, Oracle, AFP, NTP and SNMP modules. Results land in
+`<output_dir>/msfkerberos/`, and any accounts the module confirms are written
+to a `*_valid_users.txt` file next to the raw output.
+
+The module needs a realm and a username list on top of the target:
+
+- Realm: taken from `--domain`, otherwise recovered from the scan output
+  (LDAP rootDSE naming context, then smb-os-discovery / nbstat domain name).
+  If neither yields a domain, the scan is skipped with a note rather than
+  running against a wrong realm.
+- Username list: `--userlist`, otherwise the bundled
+  `extra/wordlists/kerberos_users.txt`, otherwise Metasploit's
+  `unix_users.txt` if it is installed.
+
+```
+./lazymap.sh -u 192.0.2.10 --domain CORP.EXAMPLE.COM
+./lazymap.sh -t hosts --domain CORP.EXAMPLE.COM --userlist /usr/share/metasploit-framework/data/wordlists/unix_users.txt
+```
+
+`--domain` is also passed to the `krb5-enum-users` NSE script, which otherwise
+uses its default `test` realm.
+
 # Resume
 
 Long scans can take hours. If a run is interrupted - Ctrl+C, a dropped SSH

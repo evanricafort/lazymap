@@ -41,7 +41,11 @@ run_nmap_scans() {
     table_add scripts "IKE" '-sU -sV --script ike-version -p 500'
     table_add scripts "AFP" '-sS -sV --script afp-showmount,afp-ls -p 548'
     table_add scripts "Gopher" '--script gopher-ls --script-args gopher-ls.maxfiles=100 -p 70'
-    table_add scripts "Kerberos" '--script krb5-enum-users --script-args krb5-enum-users.realm='"'"'test'"'"' -p 88'
+    # The NSE realm defaults to 'test' as before, but follows --domain when given.
+    local krb_realm
+    krb_realm="$(opt_get kerberos_domain)"
+    [ -z "$krb_realm" ] && krb_realm="test"
+    table_add scripts "Kerberos" "--script krb5-enum-users --script-args krb5-enum-users.realm='$krb_realm' -p 88"
     table_add scripts "PJL" '--script pjl-ready-message.nse --script-args '"'"'pjl_ready_message="pwn3d!"'"'"' -p 9100'
     table_add scripts "Redis" '--script redis-info,redis-brute -p 6379'
     table_add scripts "RealVNC" '--script realvnc-auth-bypass -p 5900'
@@ -126,7 +130,7 @@ run_nmap_scans() {
 
         nmap $script_args -v --reason -oN "$nmap_output_file" -iL "$targets_file"
 
-        if [[ "$script_name" == "SMB" || "$script_name" == "Oracle" || "$script_name" == "RDP" || "$script_name" == "RPC" || "$script_name" == "AFP" || "$script_name" == "NTP" || "$script_name" == "LDAP" || "$script_name" == "DNS" || "$script_name" == "SNMP" || "$script_name" == "SSH" || "$script_name" == "SSLCipher" ]]; then
+        if [[ "$script_name" == "SMB" || "$script_name" == "Kerberos" || "$script_name" == "Oracle" || "$script_name" == "RDP" || "$script_name" == "RPC" || "$script_name" == "AFP" || "$script_name" == "NTP" || "$script_name" == "LDAP" || "$script_name" == "DNS" || "$script_name" == "SNMP" || "$script_name" == "SSH" || "$script_name" == "SSLCipher" ]]; then
             nmap -sV -oG "$output_dir/nmap/${script_name}.gnmap" -iL "$targets_file"
         fi
 

@@ -171,6 +171,7 @@ $(
     report_row "Metasploit - AFP" "$output_dir/msfafp" "AFP scan outputs."
     report_row "Metasploit - NTP" "$output_dir/msfntp" "NTP scan outputs."
     report_row "Metasploit - SNMP" "$output_dir/msfsnmp" "SNMP scan outputs."
+    report_row "Metasploit - Kerberos" "$output_dir/msfkerberos" "Kerberos domain username enumeration."
 )
                 </tbody>
             </table>
@@ -225,6 +226,7 @@ $(
     create_collapsible_section "Metasploit - AFP" "$output_dir/msfafp" "*.txt"
     create_collapsible_section "Metasploit - NTP" "$output_dir/msfntp" "*.txt"
     create_collapsible_section "Metasploit - SNMP" "$output_dir/msfsnmp" "*.txt"
+    create_collapsible_section "Metasploit - Kerberos" "$output_dir/msfkerberos" "*.txt"
 
     echo "<h3>Web Scan Outputs</h3>"
     create_collapsible_section "SSLScan" "$output_dir/sslscan" "*.txt"

@@ -2,7 +2,9 @@
 
 ├── lazymap.sh - main
 ├── extra
-│   └── responder.sh - Manages the execution of Responder.
+│   ├── responder.sh - Manages the execution of Responder.
+│   └── wordlists
+│       └── kerberos_users.txt - Default username list for Kerberos enumeration.
 ├── lib
 │   ├── checks.sh - Functions for checking dependencies and input validation.
 │   ├── compat.sh - Bash 3.x compatibility helpers (option store, ordered tables, array utils).
@@ -14,7 +16,7 @@
 │   ├── live_hosts.sh - Handles live host discovery to find online targets for scans.
 │   ├── dns.sh - Conducts DNS related vulnerability checks.
 │   ├── ldap.sh - Performs LDAP anonymous bind scan.
-│   ├── metasploit.sh - Runs Metasploit scans for RDP, RPC, Oracle, NTP, SNMP and AFP vulnerabilities.
+│   ├── metasploit.sh - Runs Metasploit scans for RDP, RPC, Oracle, NTP, SNMP, AFP and Kerberos username enumeration.
 │   ├── nmap.sh - Manages all Nmap scans.
 │   ├── pret.sh - Manages PRET printer security checks.
 │   ├── smb.sh - Contains crackmapexec for SMBv1 scan and Unauthenticated RPC scans.

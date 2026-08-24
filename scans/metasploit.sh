@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
 
 run_metasploit_scan() {
@@ -10,6 +11,117 @@ run_metasploit_scan() {
     echo "spool off" >> "$resource_file"
     echo "exit" >> "$resource_file"
     msfconsole -q -r "$resource_file"
+}
+
+# ---------------------------------------------------------------------------
+# Kerberos domain username enumeration helpers
+#
+# auxiliary/gather/kerberos_enumusers needs a DOMAIN and a USER_FILE on top of
+# RHOSTS, unlike the other modules here which only need a target. The domain is
+# taken from --domain when given, otherwise recovered from the nmap output.
+# ---------------------------------------------------------------------------
+
+# resolve_kerberos_domain <output_dir> -> realm in uppercase, or empty
+resolve_kerberos_domain() {
+    local output_dir="$1"
+    local domain
+
+    domain="$(opt_get kerberos_domain)"
+    if [ -n "$domain" ]; then
+        to_upper "$domain"
+        return 0
+    fi
+
+    # LDAP rootDSE: "defaultNamingContext: DC=corp,DC=local" -> corp.example.com
+    if [ -f "$output_dir/nmap/LDAP.txt" ]; then
+        # "DC=corp,DC=local" -> "corp.example.com". Strip the label first: a
+        # greedy .*DC= would match the last component and drop the rest.
+        domain=$(grep -iaoE '(default|rootDomain)NamingContext: *DC=[^ ]+' "$output_dir/nmap/LDAP.txt" \
+                 | head -n1 \
+                 | sed -E 's/^.*[Nn]aming[Cc]ontext: *//' \
+                 | sed -E 's/[Dd][Cc]=//g' \
+                 | tr ',' '.' | tr -d '\r')
+        if [ -n "$domain" ]; then
+            to_upper "$domain"
+            return 0
+        fi
+    fi
+
+    # smb-os-discovery / nbstat: "Domain name: corp.example.com"
+    local f
+    for f in "$output_dir/nmap/SMB.txt" "$output_dir/nmap/NetBIOS.txt" "$output_dir/nmap/Kerberos.txt"; do
+        [ -f "$f" ] || continue
+        domain=$(grep -iaoE 'Domain name: *[A-Za-z0-9._-]+' "$f" | head -n1 \
+                 | sed -E 's/.*: *//' | tr -d '\r')
+        # nmap prints "<unknown>" when it could not determine the domain.
+        case "$domain" in ''|'<unknown>'|unknown) domain="" ;; esac
+        if [ -n "$domain" ]; then
+            to_upper "$domain"
+            return 0
+        fi
+    done
+
+    printf ''
+}
+
+# resolve_kerberos_userlist -> path to the username list, or empty
+resolve_kerberos_userlist() {
+    local list
+
+    list="$(opt_get kerberos_userlist)"
+    if [ -n "$list" ]; then
+        if [ -s "$list" ]; then
+            printf '%s' "$list"
+        else
+            printf ''
+        fi
+        return 0
+    fi
+
+    # Bundled list first: it targets Active Directory accounts, whereas the
+    # Metasploit list below is mostly UNIX daemon names.
+    if [ -s "$LAZYMAP_DIR/extra/wordlists/kerberos_users.txt" ]; then
+        printf '%s' "$LAZYMAP_DIR/extra/wordlists/kerberos_users.txt"
+        return 0
+    fi
+
+    local candidate
+    for candidate in \
+        /usr/share/metasploit-framework/data/wordlists/unix_users.txt \
+        /usr/share/metasploit-framework/data/wordlist/unix_users.txt \
+        /usr/share/wordlists/metasploit/unix_users.txt; do
+        if [ -s "$candidate" ]; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+    done
+
+    printf ''
+}
+
+# summarise_kerberos_output <file> <ip>
+# kerberos_enumusers marks valid accounts with "is present" and flags locked
+# ones as "account disabled or expired"; both prove the account exists.
+summarise_kerberos_output() {
+    local output_file="$1"
+    local target_ip="$2"
+    [ -f "$output_file" ] || return 0
+
+    local found
+    found=$(grep -aE 'is present|account disabled or expired' "$output_file" \
+            | sed -E 's/.*User: "([^"]*)".*/\1/' | sort -u)
+
+    if [ -n "$found" ]; then
+        local count
+        count=$(printf '%s\n' "$found" | grep -c .)
+        echo -e "${BLUE}Valid domain username(s) enumerated on $target_ip: ${count}${NC}"
+        printf '%s\n' "$found" | while IFS= read -r u; do
+            [ -n "$u" ] && echo -e "${GREEN}    + $u${NC}"
+        done
+        printf '%s\n' "$found" > "${output_file%.txt}_valid_users.txt"
+    else
+        echo -e "${YELLOW}No valid domain usernames enumerated on $target_ip.${NC}"
+    fi
 }
 
 run_metasploit_scans() {
@@ -160,6 +272,51 @@ run_metasploit_scans() {
             done < "$output_dir/snmp_targets.txt"
         else
             echo -e "${YELLOW}No SNMP targets found. Skipping SNMP Metasploit scan.${NC}"
+            echo
+        fi
+    fi
+
+    if [[ -s "$output_dir/nmap/Kerberos.gnmap" ]]; then
+        mkdir -p "$output_dir/msfkerberos"
+        awk '/^Host: / && /Ports:.*88\/open/ {print $2}' "$output_dir/nmap/Kerberos.gnmap" > "$output_dir/kerberos_targets.txt"
+        if [[ -s "$output_dir/kerberos_targets.txt" ]]; then
+            local krb_domain
+            local krb_userlist
+            krb_domain="$(resolve_kerberos_domain "$output_dir")"
+            krb_userlist="$(resolve_kerberos_userlist)"
+
+            if [[ -z "$krb_domain" ]]; then
+                echo -e "${YELLOW}Kerberos hosts found, but the domain could not be determined.${NC}"
+                echo -e "${YELLOW}Skipping Kerberos Domain Username Enumeration. Re-run with --domain <REALM> to enable it.${NC}"
+                echo
+            elif [[ -z "$krb_userlist" ]]; then
+                echo -e "${YELLOW}Kerberos hosts found, but no username list is available.${NC}"
+                echo -e "${YELLOW}Skipping Kerberos Domain Username Enumeration. Re-run with --userlist <file>.${NC}"
+                echo
+            else
+                echo -e "${GREEN}Starting Kerberos Domain Username Enumeration scan.${NC}"
+                echo -e "${CYAN}  Domain    : $krb_domain${NC}"
+                echo -e "${CYAN}  User list : $krb_userlist${NC}"
+                while IFS= read -r target_ip; do
+                    if step_completed "msf:kerberos:$target_ip"; then
+                        skip_notice "msf:kerberos:$target_ip" "Kerberos username enumeration on $target_ip"
+                        continue
+                    fi
+                    local resource_script="$output_dir/msfkerberos/kerberos_scan_${target_ip}.rc"
+                    local output_file="$output_dir/msfkerberos/kerberos_${target_ip}.txt"
+                    echo "use auxiliary/gather/kerberos_enumusers" > "$resource_script"
+                    echo "set DOMAIN $krb_domain" >> "$resource_script"
+                    echo "set RHOSTS $target_ip" >> "$resource_script"
+                    echo "set USER_FILE $krb_userlist" >> "$resource_script"
+                    run_metasploit_scan "$resource_script" "$output_file"
+                    mark_completed "msf:kerberos:$target_ip"
+                    summarise_kerberos_output "$output_file" "$target_ip"
+                    echo -e "${BLUE}Kerberos Domain Username Enumeration for $target_ip completed, results saved to $output_file${NC}"
+                    echo
+                done < "$output_dir/kerberos_targets.txt"
+            fi
+        else
+            echo -e "${YELLOW}No Kerberos targets found. Skipping Kerberos Metasploit scan.${NC}"
             echo
         fi
     fi

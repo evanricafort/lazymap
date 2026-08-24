@@ -87,7 +87,7 @@ main() {
 
     build_resume_hint "$@"
 
-    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes -n "$0" -- "$@")
+    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes,domain:,userlist: -n "$0" -- "$@")
     if [ $? != 0 ]; then
         echo -e "${RED}Error: Failed to parse options.${NC}" >&2
         exit 1
@@ -117,6 +117,8 @@ main() {
             --exclude-udp ) opt_set exclude_udp true; shift ;;
             --discord ) opt_set send_to_discord true; shift ;;
             --resume ) RESUME_MODE=true; shift ;;
+            --domain ) opt_set kerberos_domain "$2"; shift 2 ;;
+            --userlist ) opt_set kerberos_userlist "$2"; shift 2 ;;
             --install-deps ) AUTO_INSTALL=true; shift ;;
             -y | --yes ) ASSUME_YES=true; shift ;;
             -h | --help ) display_help; exit 0 ;;
