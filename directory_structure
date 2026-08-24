@@ -8,6 +8,7 @@
 ├── lib
 │   ├── checks.sh - Functions for checking dependencies and input validation.
 │   ├── compat.sh - Bash 3.x compatibility helpers (option store, ordered tables, array utils).
+│   ├── domain.sh - Recovers the Active Directory realm from scan output.
 │   ├── installer.sh - Detects the package manager and installs missing tools.
 │   ├── colors.sh - Handles the output colors.
 │   ├── help.sh - Displays the help message.
@@ -16,6 +17,7 @@
 │   ├── live_hosts.sh - Handles live host discovery to find online targets for scans.
 │   ├── dns.sh - Conducts DNS related vulnerability checks.
 │   ├── ldap.sh - Performs LDAP anonymous bind scan.
+│   ├── mitm6.sh - IPv6 DNS Takeover test using mitm6 and impacket-ntlmrelayx.
 │   ├── metasploit.sh - Runs Metasploit scans for RDP, RPC, Oracle, NTP, SNMP, AFP and Kerberos username enumeration.
 │   ├── nmap.sh - Manages all Nmap scans.
 │   ├── pret.sh - Manages PRET printer security checks.

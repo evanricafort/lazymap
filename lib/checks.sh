@@ -31,6 +31,12 @@ collect_missing_tools() {
     for tool in "${REQUIRED_TOOLS[@]}"; do
         tool_present "$tool" || echo "$tool"
     done
+    # Tools for opt-in tests are only required when that test was requested.
+    if opt_true mitm6; then
+        for tool in "${OPTIONAL_TOOLS[@]}"; do
+            tool_present "$tool" || echo "$tool"
+        done
+    fi
 }
 
 report_missing_tools() {

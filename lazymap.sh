@@ -29,6 +29,7 @@ source "$LAZYMAP_DIR/scans/metasploit.sh"
 source "$LAZYMAP_DIR/scans/smb.sh"
 source "$LAZYMAP_DIR/scans/ldap.sh"
 source "$LAZYMAP_DIR/scans/dns.sh"
+source "$LAZYMAP_DIR/scans/mitm6.sh"
 source "$LAZYMAP_DIR/scans/pret.sh"
 source "$LAZYMAP_DIR/extra/responder.sh"
 source "$LAZYMAP_DIR/reports/html_report.sh"
@@ -87,7 +88,7 @@ main() {
 
     build_resume_hint "$@"
 
-    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes,domain:,userlist: -n "$0" -- "$@")
+    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes,domain:,userlist:,mitm6,mitm6-interface:,mitm6-time: -n "$0" -- "$@")
     if [ $? != 0 ]; then
         echo -e "${RED}Error: Failed to parse options.${NC}" >&2
         exit 1
@@ -118,6 +119,9 @@ main() {
             --discord ) opt_set send_to_discord true; shift ;;
             --resume ) RESUME_MODE=true; shift ;;
             --domain ) opt_set kerberos_domain "$2"; shift 2 ;;
+            --mitm6 ) opt_set mitm6 true; shift ;;
+            --mitm6-interface ) opt_set mitm6_interface "$2"; shift 2 ;;
+            --mitm6-time ) opt_set mitm6_duration "$2"; shift 2 ;;
             --userlist ) opt_set kerberos_userlist "$2"; shift 2 ;;
             --install-deps ) AUTO_INSTALL=true; shift ;;
             -y | --yes ) ASSUME_YES=true; shift ;;
@@ -126,6 +130,18 @@ main() {
             * ) break ;;
         esac
     done
+
+    local mitm6_time
+    mitm6_time="$(opt_get mitm6_duration)"
+    if [ -n "$mitm6_time" ]; then
+        case "$mitm6_time" in
+            ''|*[!0-9]*) echo -e "${RED}Error: --mitm6-time expects a whole number of seconds.${NC}"; exit 1 ;;
+        esac
+        if [ "$mitm6_time" -lt 30 ]; then
+            echo -e "${RED}Error: --mitm6-time must be at least 30 seconds to observe anything useful.${NC}"
+            exit 1
+        fi
+    fi
 
     # Allow "--install-deps" on its own to set the machine up with no scan.
     if [[ "$AUTO_INSTALL" == true && -z "$targets_file" && -z "$single_target" ]]; then
@@ -215,6 +231,10 @@ main() {
     run_ldap_scan "$output_dir" "${TARGETS[@]}"
 
     run_dns_scan "$output_dir"
+
+    if opt_true mitm6; then
+        run_step "mitm6" "IPv6 DNS takeover test" run_mitm6_scan "$output_dir"
+    fi
 
     if opt_true pret; then
         run_step "pret" "PRET printer check" run_pret_scan "$output_dir"

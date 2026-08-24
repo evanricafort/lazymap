@@ -16,6 +16,10 @@ ASSUME_YES=false
 # Commands lazymap needs, in the order they are reported.
 REQUIRED_TOOLS=(nmap crackmapexec ssh-audit sslscan wget dig ldapsearch msfconsole curl rpcclient screen zip)
 
+# Needed only by opt-in tests, so they are not part of the standard check.
+# --install-deps installs them too when the matching test is requested.
+OPTIONAL_TOOLS=(mitm6 impacket-ntlmrelayx)
+
 detect_pkg_manager() {
     if [[ -n "$PKG_MGR" ]]; then return 0; fi
 
@@ -79,6 +83,8 @@ resolve_package() {
                 msfconsole)   echo "metasploit-framework" ;;
                 crackmapexec) echo "netexec" ;;
                 ssh-audit)    echo "ssh-audit" ;;
+                mitm6)        echo "mitm6" ;;
+                impacket-ntlmrelayx) echo "python3-impacket" ;;
                 *)            echo "$tool" ;;
             esac ;;
         dnf|yum)
@@ -89,6 +95,8 @@ resolve_package() {
                 msfconsole)   echo "" ;;
                 crackmapexec) echo "pipx:netexec" ;;
                 ssh-audit)    echo "pipx:ssh-audit" ;;
+                mitm6)        echo "pipx:mitm6" ;;
+                impacket-ntlmrelayx) echo "pipx:impacket" ;;
                 *)            echo "$tool" ;;
             esac ;;
         pacman)
@@ -99,6 +107,8 @@ resolve_package() {
                 msfconsole)   echo "metasploit" ;;
                 crackmapexec) echo "pipx:netexec" ;;
                 ssh-audit)    echo "pipx:ssh-audit" ;;
+                mitm6)        echo "pipx:mitm6" ;;
+                impacket-ntlmrelayx) echo "pipx:impacket" ;;
                 *)            echo "$tool" ;;
             esac ;;
         zypper)
@@ -109,6 +119,8 @@ resolve_package() {
                 msfconsole)   echo "" ;;
                 crackmapexec) echo "pipx:netexec" ;;
                 ssh-audit)    echo "pipx:ssh-audit" ;;
+                mitm6)        echo "pipx:mitm6" ;;
+                impacket-ntlmrelayx) echo "pipx:impacket" ;;
                 *)            echo "$tool" ;;
             esac ;;
         brew)
@@ -119,6 +131,8 @@ resolve_package() {
                 msfconsole)   echo "" ;;
                 crackmapexec) echo "pipx:netexec" ;;
                 ssh-audit)    echo "ssh-audit" ;;
+                mitm6)        echo "pipx:mitm6" ;;
+                impacket-ntlmrelayx) echo "pipx:impacket" ;;
                 *)            echo "$tool" ;;
             esac ;;
         *)

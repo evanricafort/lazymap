@@ -2,6 +2,7 @@
 
 source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
+source "$LAZYMAP_DIR/lib/domain.sh"
 
 run_metasploit_scan() {
     local resource_file=$1
@@ -17,52 +18,9 @@ run_metasploit_scan() {
 # Kerberos domain username enumeration helpers
 #
 # auxiliary/gather/kerberos_enumusers needs a DOMAIN and a USER_FILE on top of
-# RHOSTS, unlike the other modules here which only need a target. The domain is
-# taken from --domain when given, otherwise recovered from the nmap output.
+# RHOSTS, unlike the other modules here which only need a target. The realm
+# comes from resolve_ad_domain in lib/domain.sh.
 # ---------------------------------------------------------------------------
-
-# resolve_kerberos_domain <output_dir> -> realm in uppercase, or empty
-resolve_kerberos_domain() {
-    local output_dir="$1"
-    local domain
-
-    domain="$(opt_get kerberos_domain)"
-    if [ -n "$domain" ]; then
-        to_upper "$domain"
-        return 0
-    fi
-
-    # LDAP rootDSE: "defaultNamingContext: DC=corp,DC=local" -> corp.example.com
-    if [ -f "$output_dir/nmap/LDAP.txt" ]; then
-        # "DC=corp,DC=local" -> "corp.example.com". Strip the label first: a
-        # greedy .*DC= would match the last component and drop the rest.
-        domain=$(grep -iaoE '(default|rootDomain)NamingContext: *DC=[^ ]+' "$output_dir/nmap/LDAP.txt" \
-                 | head -n1 \
-                 | sed -E 's/^.*[Nn]aming[Cc]ontext: *//' \
-                 | sed -E 's/[Dd][Cc]=//g' \
-                 | tr ',' '.' | tr -d '\r')
-        if [ -n "$domain" ]; then
-            to_upper "$domain"
-            return 0
-        fi
-    fi
-
-    # smb-os-discovery / nbstat: "Domain name: corp.example.com"
-    local f
-    for f in "$output_dir/nmap/SMB.txt" "$output_dir/nmap/NetBIOS.txt" "$output_dir/nmap/Kerberos.txt"; do
-        [ -f "$f" ] || continue
-        domain=$(grep -iaoE 'Domain name: *[A-Za-z0-9._-]+' "$f" | head -n1 \
-                 | sed -E 's/.*: *//' | tr -d '\r')
-        # nmap prints "<unknown>" when it could not determine the domain.
-        case "$domain" in ''|'<unknown>'|unknown) domain="" ;; esac
-        if [ -n "$domain" ]; then
-            to_upper "$domain"
-            return 0
-        fi
-    done
-
-    printf ''
-}
 
 # resolve_kerberos_userlist -> path to the username list, or empty
 resolve_kerberos_userlist() {
@@ -282,7 +240,7 @@ run_metasploit_scans() {
         if [[ -s "$output_dir/kerberos_targets.txt" ]]; then
             local krb_domain
             local krb_userlist
-            krb_domain="$(resolve_kerberos_domain "$output_dir")"
+            krb_domain="$(resolve_ad_domain "$output_dir")"
             krb_userlist="$(resolve_kerberos_userlist)"
 
             if [[ -z "$krb_domain" ]]; then

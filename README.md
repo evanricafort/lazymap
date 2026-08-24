@@ -70,6 +70,41 @@ git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmo
 
 Note: Run in sudo mode to execute NMAP scripts related to UDP scan and Responder.
 
+# IPv6 DNS Takeover (mitm6)
+
+Windows prefers IPv6 over IPv4 and has it enabled by default, so a rogue DHCPv6
+server can become the network's DNS server and redirect name lookups - including
+WPAD - to the tester. lazymap tests this with `mitm6` plus
+`impacket-ntlmrelayx`, relaying captured authentication to the domain
+controllers found during the LDAP scan.
+
+```
+sudo ./lazymap.sh -t hosts --mitm6 --mitm6-interface eth0 --domain CORP.EXAMPLE.COM
+```
+
+This test is different from everything else in lazymap: it is an **active
+attack**. mitm6 answers DHCPv6 solicits and spoofs DNS for every Windows host in
+the broadcast domain, not only the hosts in your target list, and ntlmrelayx
+relays the credentials that come back. Because of that:
+
+- It only runs when `--mitm6` is passed, and it needs root.
+- It asks you to type the interface name to confirm before starting. `-y` skips
+  the prompt for scripted runs; a non-interactive shell without `-y` skips the
+  test rather than attacking silently.
+- It is time-boxed by `--mitm6-time` (default 300 seconds, minimum 30) so the
+  rest of the scan still finishes.
+- Relay targets come from the LDAP scan, preferring LDAPS (636) over LDAP (389)
+  because relaying to plain LDAP usually fails once signing is enforced.
+
+Output lands in `<output_dir>/mitm6/`: `ntlmrelayx.log`, `mitm6.log`, the
+`loot/` directory, and `relayed_accounts.txt` listing every account whose
+authentication was successfully relayed. That file is the evidence of the
+finding - if it is non-empty, the domain is vulnerable.
+
+Running Responder (`--interface`) at the same time is possible but not advised:
+both answer WPAD and they compete for the same requests. lazymap warns when both
+are enabled.
+
 # Kerberos Domain Username Enumeration
 
 When a host exposes Kerberos on port 88, lazymap runs
