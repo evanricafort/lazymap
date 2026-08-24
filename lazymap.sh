@@ -48,6 +48,17 @@ handle_discord_webhook() {
     fi
 }
 
+# Produces the HTML report and sends it on if --discord was used. Called from
+# every exit path so a run always leaves a report behind.
+finalise_reports() {
+    end_date=$(date)
+    generate_html_report "$output_dir" "$start_date" "$end_date"
+
+    if opt_true send_to_discord && [ -n "$discord_webhook" ]; then
+        send_discord_webhook "$output_dir" "$discord_webhook" "$start_date"
+    fi
+}
+
 check_for_live_hosts_and_exit() {
     local live_hosts_file="$output_dir/live_hosts.txt"
     if [[ ! -s "$live_hosts_file" ]]; then
@@ -57,7 +68,11 @@ check_for_live_hosts_and_exit() {
         echo -e "${CYAN}No live host IP/s were found in the defined target scope.${NC}"
         echo -e "${CYAN}Scanning process has been successfully terminated.${NC}"
         echo -e "${CYAN}Output directory: ${output_dir} (created)${NC}"
-        echo -e "${BLUE}======================================================${NC}"
+        echo -e "${BLUE}======================================================${NC}\n"
+
+        # A report is still produced, recording that the scope had no live hosts.
+        finalise_reports
+
         echo -e "${GREEN}Scan finished in $(elapsed_runtime).${NC}\n"
         exit 0
     fi
@@ -213,6 +228,7 @@ main() {
         echo -e "${YELLOW}Starting Firewall Evasion Scans.${NC}\n"
         run_firewall_evasion_scans "$output_dir"
         echo -e "${BLUE}Firewall evasion scans completed.${NC}"
+        finalise_reports
         print_completion_summary
         exit 0
     fi
@@ -243,12 +259,7 @@ main() {
         run_pret_scan "$output_dir"
     fi
 
-    end_date=$(date)
-    generate_html_report "$output_dir" "$start_date" "$end_date"
-
-    if opt_true send_to_discord && [ -n "$discord_webhook" ]; then
-        send_discord_webhook "$output_dir" "$discord_webhook" "$start_date"
-    fi
+    finalise_reports
 
     mark_completed "scan:finished"
 

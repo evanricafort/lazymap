@@ -100,3 +100,4 @@ table_key() {
 table_value() {
     printf '%s' "${1#*$LZ_TAB}"
 }
+

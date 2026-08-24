@@ -152,6 +152,17 @@ The module needs a realm and a username list on top of the target:
 `--domain` is also passed to the `krb5-enum-users` NSE script, which otherwise
 uses its default `test` realm.
 
+# Reports
+
+Every run produces `<output_dir>/lazymap_report.html`, including runs that find
+nothing. If no live host is found in the target scope, the scan stops early as
+before, but the report is still written and records the empty result rather than
+leaving you with just a terminal message. The same applies to a firewall evasion
+run (`-4`), which previously exited without a report.
+
+When `--discord` is used, the report is sent on from whichever exit path the run
+took.
+
 # Resume
 
 Long scans can take hours. If a run is interrupted - Ctrl+C, a dropped SSH

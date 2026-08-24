@@ -136,10 +136,19 @@ generate_html_report() {
                 <tr><th>End Date & Time</th><td>$end_date</td></tr>
                 <tr><th>Live Host(s) Found</th><td>
 $(
-    if [[ -f "$output_dir/live_hosts.txt" ]]; then
-        cat "$output_dir/live_hosts.txt" | awk '{print "<span>" $0 "</span><br>"}'
+    if [[ -s "$output_dir/live_hosts.txt" ]]; then
+        awk '{print "<span>" $0 "</span><br>"}' "$output_dir/live_hosts.txt"
     else
-        echo "N/A"
+        echo "<span style=\"color:#c0392b;\">None - no live hosts were found in the defined target scope.</span>"
+    fi
+)
+                </td></tr>
+                <tr><th>Host Count</th><td>
+$(
+    if [[ -s "$output_dir/live_hosts.txt" ]]; then
+        grep -c . "$output_dir/live_hosts.txt"
+    else
+        echo "0"
     fi
 )
                 </td></tr>
