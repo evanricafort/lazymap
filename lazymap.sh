@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# lazymap uses associative arrays and mapfile, which need Bash 4 or newer.
+if [[ -z "${BASH_VERSINFO[0]}" || "${BASH_VERSINFO[0]}" -lt 4 ]]; then
+    echo "Error: lazymap requires Bash 4 or higher (found ${BASH_VERSION:-unknown})." >&2
+    echo "       On macOS, install a newer Bash with 'brew install bash'." >&2
+    exit 1
+fi
+
 # Resolve the installation directory so lazymap can be launched from anywhere.
 LAZYMAP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 export LAZYMAP_DIR
@@ -14,6 +21,7 @@ RESUME_HINT="sudo ./lazymap.sh --resume"
 
 source "$LAZYMAP_DIR/lib/colors.sh"
 source "$LAZYMAP_DIR/lib/state.sh"
+source "$LAZYMAP_DIR/lib/installer.sh"
 source "$LAZYMAP_DIR/lib/help.sh"
 source "$LAZYMAP_DIR/lib/checks.sh"
 source "$LAZYMAP_DIR/scans/nmap.sh"
@@ -80,7 +88,7 @@ main() {
 
     build_resume_hint "$@"
 
-    TEMP=$(getopt -o t:u:1234ankhbo: --long pret,interface:,help,exclude-udp,discord,resume -n "$0" -- "$@")
+    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes -n "$0" -- "$@")
     if [ $? != 0 ]; then
         echo -e "${RED}Error: Failed to parse options.${NC}" >&2
         exit 1
@@ -110,11 +118,18 @@ main() {
             --exclude-udp ) OPTIONS[exclude_udp]=true; shift ;;
             --discord ) OPTIONS[send_to_discord]=true; shift ;;
             --resume ) RESUME_MODE=true; shift ;;
+            --install-deps ) AUTO_INSTALL=true; shift ;;
+            -y | --yes ) ASSUME_YES=true; shift ;;
             -h | --help ) display_help; exit 0 ;;
             -- ) shift; break ;;
             * ) break ;;
         esac
     done
+
+    # Allow "--install-deps" on its own to set the machine up with no scan.
+    if [[ "$AUTO_INSTALL" == true && -z "$targets_file" && -z "$single_target" ]]; then
+        run_install_deps_only
+    fi
 
     if [[ -n "$targets_file" && -n "$single_target" ]]; then
         echo -e "${RED}Error: Cannot specify both a targets file (-t) and a single target (-u).${NC}"

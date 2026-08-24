@@ -33,6 +33,28 @@ lazymap is a single command-line tool for network penetration testing. it combin
 Note: CrackMapExec is now distributed as NetExec. lazymap uses `crackmapexec`
 when present and otherwise falls back to the `nxc` command, so either one
 satisfies the dependency check.
+
+## Installing the requirements automatically
+
+lazymap can install whatever is missing for you:
+
+```
+sudo ./lazymap.sh --install-deps
+```
+
+That checks every required tool, installs the missing ones, and exits. Add it
+to a scan command instead (`sudo ./lazymap.sh -t hosts --install-deps`) to
+install and then continue straight into the scan.
+
+If you just start a scan on a machine with missing tools, lazymap lists all of
+them at once and offers to install them before doing anything else. Answer `y`
+to proceed, or pass `-y`/`--yes` to skip the prompt in scripted runs.
+
+Supported package managers: apt, dnf, yum, pacman, zypper, and Homebrew.
+Tools with no distro package (NetExec, ssh-audit on non-Debian systems) are
+installed with pipx, falling back to `pip3 --user`. Anything that cannot be
+installed automatically - Metasploit outside Kali, for example - is reported
+with a pointer to its installer rather than failing silently.
   
 # Installation
 
