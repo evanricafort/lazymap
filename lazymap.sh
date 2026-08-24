@@ -26,7 +26,8 @@ source "$LAZYMAP_DIR/lib/checks.sh"
 source "$LAZYMAP_DIR/scans/nmap.sh"
 source "$LAZYMAP_DIR/scans/web.sh"
 source "$LAZYMAP_DIR/scans/metasploit.sh"
-source "$LAZYMAP_DIR/scans/smb.sh"
+source "$LAZYMAP_DIR/scans/smbv1.sh"
+source "$LAZYMAP_DIR/scans/unauthrpc.sh"
 source "$LAZYMAP_DIR/scans/ldap.sh"
 source "$LAZYMAP_DIR/scans/dns.sh"
 source "$LAZYMAP_DIR/scans/mitm6.sh"
@@ -226,7 +227,9 @@ main() {
 
     run_metasploit_scans "$output_dir"
 
-    run_smb_scans "$output_dir" "${TARGETS[@]}"
+    run_step "smb:smbv1" "SMBv1 check" run_smbv1_scan "$output_dir"
+
+    run_step "smb:unauthrpc" "Unauthenticated RPC check" run_unauth_rpc_scan "$output_dir"
 
     run_ldap_scan "$output_dir" "${TARGETS[@]}"
 

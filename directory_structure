@@ -9,6 +9,7 @@
 │   ├── checks.sh - Functions for checking dependencies and input validation.
 │   ├── compat.sh - Bash 3.x compatibility helpers (option store, ordered tables, array utils).
 │   ├── domain.sh - Recovers the Active Directory realm from scan output.
+│   ├── targets.sh - Shared target-list builders sourced from the nmap output.
 │   ├── installer.sh - Detects the package manager and installs missing tools.
 │   ├── colors.sh - Handles the output colors.
 │   ├── help.sh - Displays the help message.
@@ -21,7 +22,8 @@
 │   ├── metasploit.sh - Runs Metasploit scans for RDP, RPC, Oracle, NTP, SNMP, AFP and Kerberos username enumeration.
 │   ├── nmap.sh - Manages all Nmap scans.
 │   ├── pret.sh - Installs PRET automatically and runs printer security checks.
-│   ├── smb.sh - Contains crackmapexec for SMBv1 scan and Unauthenticated RPC scans.
+│   ├── smbv1.sh - SMBv1 detection using crackmapexec (or nxc).
+│   ├── unauthrpc.sh - Unauthenticated RPC (null session) enumeration using rpcclient.
 │   └── web.sh - Handles web and SSH related scans.
 ├── reports
     ├── html_report.sh - Generates an HTML report from overall scan results.
