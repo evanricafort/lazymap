@@ -47,6 +47,8 @@ display_help() {
     echo -e "  ${YELLOW}--resume${NC} ${GREEN}to continue an interrupted scan, skipping steps that already finished.${NC}"
     echo -e "  ${YELLOW}--domain [realm]${NC} ${GREEN}Active Directory realm for Kerberos username enumeration (auto-detected when omitted).${NC}"
     echo -e "  ${YELLOW}--userlist [file]${NC} ${GREEN}username list for Kerberos enumeration (default: extra/wordlists/kerberos_users.txt).${NC}"
+    echo -e "  ${YELLOW}--script-timeout [time]${NC} ${GREEN}max runtime per NSE script per host (default: 5m; use 0 to disable).${NC}"
+    echo -e "  ${YELLOW}--host-timeout [time]${NC} ${GREEN}give up on a host after this long (nmap format, e.g. 30m). Off by default.${NC}"
     echo -e "  ${YELLOW}--ntp-dos${NC} ${GREEN}enable the NTP peer-list module, which can disrupt the target's time service (off by default).${NC}"
     echo -e "  ${YELLOW}--mitm6${NC} ${GREEN}to run the IPv6 DNS Takeover test (mitm6 + ntlmrelayx). Active attack, needs root and --domain.${NC}"
     echo -e "  ${YELLOW}--mitm6-interface [iface]${NC} ${GREEN}interface for mitm6 (defaults to --interface).${NC}"

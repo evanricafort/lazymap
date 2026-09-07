@@ -3,6 +3,50 @@
 source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
 
+# Nmap places no limit on NSE runtime by default, so a script that never
+# returns - rdp-enum-encryption against some RDP stacks is the usual culprit -
+# hangs the whole scan after "NSE: Script scanning". --script-timeout bounds
+# each script per host. Support is probed with a list scan, which sends no
+# packets, because --script-timeout is not shown in nmap --help.
+NMAP_SCRIPT_TIMEOUT_SUPPORTED=""
+
+nmap_supports_script_timeout() {
+    if [ -z "$NMAP_SCRIPT_TIMEOUT_SUPPORTED" ]; then
+        if nmap --script-timeout 1m -sL -n 127.0.0.1 >/dev/null 2>&1; then
+            NMAP_SCRIPT_TIMEOUT_SUPPORTED="yes"
+        else
+            NMAP_SCRIPT_TIMEOUT_SUPPORTED="no"
+        fi
+    fi
+    [ "$NMAP_SCRIPT_TIMEOUT_SUPPORTED" = "yes" ]
+}
+
+# Echoes the timeout flags to add to every nmap invocation.
+nmap_timeout_args() {
+    local args=""
+    local st
+    local ht
+
+    st="$(opt_get script_timeout)"
+    [ -z "$st" ] && st="5m"
+    case "$st" in
+        0|none|off) st="" ;;
+    esac
+    if [ -n "$st" ] && nmap_supports_script_timeout; then
+        args="--script-timeout $st"
+    fi
+
+    ht="$(opt_get host_timeout)"
+    if [ -n "$ht" ]; then
+        case "$ht" in
+            0|none|off) ;;
+            *) args="$args --host-timeout $ht" ;;
+        esac
+    fi
+
+    printf '%s' "$args"
+}
+
 run_nmap_scans() {
     local output_dir="$1"
 
@@ -113,6 +157,14 @@ run_nmap_scans() {
         scripts=("${rebuilt[@]}")
     fi
 
+    local timeout_args
+    timeout_args="$(nmap_timeout_args)"
+    if [ -n "$timeout_args" ]; then
+        echo -e "${YELLOW}• NSE guard: ${timeout_args}${NC}\n"
+    else
+        echo -e "${YELLOW}• NSE guard disabled: a hanging script can stall the scan.${NC}\n"
+    fi
+
     local entry
     for entry in "${scripts[@]}"; do
         script_name="$(table_key "$entry")"
@@ -132,7 +184,7 @@ run_nmap_scans() {
         # a second "nmap -sV -oG" run with no -p and no -v: a silent top-1000
         # port version sweep of every live host, repeated for 13 modules, which
         # ignored -n/-T4/--min-rate and looked like the scan had hung.
-        nmap $script_args -v --reason --stats-every 30s \
+        nmap $script_args $timeout_args -v --reason --stats-every 30s \
             -oN "$nmap_output_file" \
             -oG "$output_dir/nmap/${script_name}.gnmap" \
             -iL "$targets_file"
@@ -141,7 +193,9 @@ run_nmap_scans() {
         echo -e "${GREEN}Completed ${script_name} scan. Output saved to ${nmap_output_file}.${NC}\n"
     done
 
-    echo -e "${BLUE}Nmap associative scans completed.${NC}\n"
+    echo -e "${BLUE}======================================================${NC}"
+    echo -e "${BLUE}All nmap scans completed. Starting service-specific checks.${NC}"
+    echo -e "${BLUE}======================================================${NC}\n"
 }
 
 run_firewall_evasion_scans() {
@@ -174,6 +228,9 @@ run_firewall_evasion_scans() {
     table_add firewall_evasion_scripts "SourcePort" '-g 53 -Pn'
     table_add firewall_evasion_scripts "SourcePortCheck" '-sSUC --script source-port -Pn'
 
+    local timeout_args
+    timeout_args="$(nmap_timeout_args)"
+
     local entry
     for entry in "${firewall_evasion_scripts[@]}"; do
         script_name="$(table_key "$entry")"
@@ -188,7 +245,7 @@ run_firewall_evasion_scans() {
         nmap_output_file="$output_dir/nmap/firewall_evasion/${script_name}.txt"
         mkdir -p "$(dirname "$nmap_output_file")"
 
-        nmap $script_args -v --reason --stats-every 30s -oN "$nmap_output_file" -iL "$targets_file"
+        nmap $script_args $timeout_args -v --reason --stats-every 30s -oN "$nmap_output_file" -iL "$targets_file"
 
         mark_completed "fw:$script_name"
         echo -e "${GREEN}Completed ${script_name} scan.${NC}\n"

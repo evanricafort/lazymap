@@ -104,7 +104,7 @@ main() {
 
     build_resume_hint "$@"
 
-    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes,domain:,userlist:,mitm6,mitm6-interface:,mitm6-time:,ntp-dos -n "$0" -- "$@")
+    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes,domain:,userlist:,mitm6,mitm6-interface:,mitm6-time:,ntp-dos,script-timeout:,host-timeout: -n "$0" -- "$@")
     if [ $? != 0 ]; then
         echo -e "${RED}Error: Failed to parse options.${NC}" >&2
         exit 1
@@ -136,6 +136,8 @@ main() {
             --resume ) RESUME_MODE=true; shift ;;
             --domain ) opt_set kerberos_domain "$2"; shift 2 ;;
             --ntp-dos ) opt_set ntp_dos true; shift ;;
+            --script-timeout ) opt_set script_timeout "$2"; shift 2 ;;
+            --host-timeout ) opt_set host_timeout "$2"; shift 2 ;;
             --mitm6 ) opt_set mitm6 true; shift ;;
             --mitm6-interface ) opt_set mitm6_interface "$2"; shift 2 ;;
             --mitm6-time ) opt_set mitm6_duration "$2"; shift 2 ;;
