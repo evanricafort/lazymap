@@ -7,7 +7,7 @@ run_dns_scan() {
     echo -e "${YELLOW}Starting DNS Vulnerabilities scan using 'dig +dnssec'.${NC}\n"
 
     if [[ -f "$output_dir/nmap/DNS.gnmap" ]]; then
-        local ips_with_port_53_open=$(awk '/^Host: / && /Ports:.*53\/open/{print $2}' "$output_dir/nmap/DNS.gnmap")
+        local ips_with_port_53_open=$(awk '/^Host: / && /Ports:.*53\/open\//{print $2}' "$output_dir/nmap/DNS.gnmap")
 
         if [[ -n "$ips_with_port_53_open" ]]; then
             mkdir -p "$output_dir/dnssec"

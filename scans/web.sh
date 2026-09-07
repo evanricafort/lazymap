@@ -44,7 +44,7 @@ run_web_scans() {
 
     # Get a list of targets with port 443 open from the Nmap SSLCipher scan
     if [[ -f "$output_dir/nmap/SSLCipher.gnmap" ]]; then
-        local ssl_targets=$(awk '/Host: / && /Ports:.*443\/open/ {print $2}' "$output_dir/nmap/SSLCipher.gnmap")
+        local ssl_targets=$(awk '/Host: / && /Ports:.*443\/open\// {print $2}' "$output_dir/nmap/SSLCipher.gnmap")
         if [[ -n "$ssl_targets" ]]; then
             echo -e "${GREEN}Found targets with port 443 open. Starting SSLScan...${NC}"
             for target in $ssl_targets; do
@@ -59,7 +59,7 @@ run_web_scans() {
 
     # Get a list of targets with port 22 open from the Nmap SSH scan
     if [[ -f "$output_dir/nmap/SSH.gnmap" ]]; then
-        local ssh_targets=$(awk '/Host: / && /Ports:.*22\/open/ {print $2}' "$output_dir/nmap/SSH.gnmap")
+        local ssh_targets=$(awk '/Host: / && /Ports:.*22\/open\// {print $2}' "$output_dir/nmap/SSH.gnmap")
         if [[ -n "$ssh_targets" ]]; then
             echo -e "${GREEN}Found targets with port 22 open. Starting SSH-Audit...${NC}"
             for target in $ssh_targets; do

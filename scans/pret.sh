@@ -44,7 +44,7 @@ run_pret_scan() {
     local targets="$output_dir/pret/printer_targets.txt"
     : > "$targets"
     if [[ -f "$output_dir/nmap/PJL.gnmap" ]]; then
-        awk '/^Host: / && /Ports:.*9100\/open/ {print $2}' "$output_dir/nmap/PJL.gnmap" | sort -u > "$targets"
+        awk '/^Host: / && /Ports:.*9100\/open\// {print $2}' "$output_dir/nmap/PJL.gnmap" | sort -u > "$targets"
     fi
 
     if [[ ! -s "$targets" ]]; then

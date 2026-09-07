@@ -23,7 +23,7 @@ collect_smb_targets() {
     fi
 
     if [ -f "$smb_gnmap" ]; then
-        awk '/^Host: / && /Ports:.*(139|445)\/open/ {print $2}' "$smb_gnmap" | sort -u > "$targets"
+        awk '/^Host: / && /Ports:.*(139|445)\/open\// {print $2}' "$smb_gnmap" | sort -u > "$targets"
     elif [ -f "$smb_txt" ]; then
         # Fall back to the normal-format output when no greppable file exists.
         awk '/Nmap scan report for/{ip=$NF; gsub(/[()]/,"",ip)} /^(139|445)\/tcp[[:space:]]+open/{print ip}' \

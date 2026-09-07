@@ -128,11 +128,14 @@ run_nmap_scans() {
 
         nmap_output_file="$output_dir/nmap/${script_name}.txt"
 
-        nmap $script_args -v --reason -oN "$nmap_output_file" -iL "$targets_file"
-
-        if [[ "$script_name" == "SMB" || "$script_name" == "PJL" || "$script_name" == "Kerberos" || "$script_name" == "Oracle" || "$script_name" == "RDP" || "$script_name" == "RPC" || "$script_name" == "AFP" || "$script_name" == "NTP" || "$script_name" == "LDAP" || "$script_name" == "DNS" || "$script_name" == "SNMP" || "$script_name" == "SSH" || "$script_name" == "SSLCipher" ]]; then
-            nmap -sV -oG "$output_dir/nmap/${script_name}.gnmap" -iL "$targets_file"
-        fi
+        # Greppable output comes from this same scan. It used to be produced by
+        # a second "nmap -sV -oG" run with no -p and no -v: a silent top-1000
+        # port version sweep of every live host, repeated for 13 modules, which
+        # ignored -n/-T4/--min-rate and looked like the scan had hung.
+        nmap $script_args -v --reason --stats-every 30s \
+            -oN "$nmap_output_file" \
+            -oG "$output_dir/nmap/${script_name}.gnmap" \
+            -iL "$targets_file"
 
         mark_completed "nmap:$script_name"
         echo -e "${GREEN}Completed ${script_name} scan. Output saved to ${nmap_output_file}.${NC}\n"
@@ -185,7 +188,7 @@ run_firewall_evasion_scans() {
         nmap_output_file="$output_dir/nmap/firewall_evasion/${script_name}.txt"
         mkdir -p "$(dirname "$nmap_output_file")"
 
-        nmap $script_args -v --reason -oN "$nmap_output_file" -iL "$targets_file"
+        nmap $script_args -v --reason --stats-every 30s -oN "$nmap_output_file" -iL "$targets_file"
 
         mark_completed "fw:$script_name"
         echo -e "${GREEN}Completed ${script_name} scan.${NC}\n"

@@ -87,7 +87,7 @@ run_metasploit_scans() {
 
     if [[ -s "$output_dir/nmap/RDP.gnmap" ]]; then
         mkdir -p "$output_dir/msfrdp"
-        awk '/^Host: / && /Ports:.*3389\/open/ {print $2}' "$output_dir/nmap/RDP.gnmap" > "$output_dir/rdp_targets.txt"
+        awk '/^Host: / && /Ports:.*3389\/open\// {print $2}' "$output_dir/nmap/RDP.gnmap" > "$output_dir/rdp_targets.txt"
         if [[ -s "$output_dir/rdp_targets.txt" ]]; then
             echo -e "${GREEN}Starting RDP (Remote Desktop Protocol) scan.${NC}"
             while IFS= read -r target_ip; do
@@ -112,7 +112,7 @@ run_metasploit_scans() {
 
     if [[ -s "$output_dir/nmap/RPC.gnmap" ]]; then
         mkdir -p "$output_dir/msfrpc"
-        awk '/^Host: / && /Ports:.*135\/open/ {print $2}' "$output_dir/nmap/RPC.gnmap" > "$output_dir/rpc_targets.txt"
+        awk '/^Host: / && /Ports:.*135\/open\// {print $2}' "$output_dir/nmap/RPC.gnmap" > "$output_dir/rpc_targets.txt"
         if [[ -s "$output_dir/rpc_targets.txt" ]]; then
             echo -e "${GREEN}Starting RPC (Remote Procedure Call) scan.${NC}"
             while IFS= read -r target_ip; do
@@ -137,7 +137,7 @@ run_metasploit_scans() {
 
     if [[ -s "$output_dir/nmap/Oracle.gnmap" ]]; then
         mkdir -p "$output_dir/msforacletnscmd"
-        awk '/^Host: / && /Ports:.*1521\/open/ {print $2}' "$output_dir/nmap/Oracle.gnmap" > "$output_dir/oracle_targets.txt"
+        awk '/^Host: / && /Ports:.*1521\/open\// {print $2}' "$output_dir/nmap/Oracle.gnmap" > "$output_dir/oracle_targets.txt"
         if [[ -s "$output_dir/oracle_targets.txt" ]]; then
             echo -e "${GREEN}Starting Oracle TNS Listener SID Enumeration scan.${NC}"
             while IFS= read -r target_ip; do
@@ -162,7 +162,7 @@ run_metasploit_scans() {
 
     if [[ -s "$output_dir/nmap/AFP.gnmap" ]]; then
         mkdir -p "$output_dir/msfafp"
-        awk '/^Host: / && /Ports:.*548\/open/ {print $2}' "$output_dir/nmap/AFP.gnmap" > "$output_dir/afp_targets.txt"
+        awk '/^Host: / && /Ports:.*548\/open\// {print $2}' "$output_dir/nmap/AFP.gnmap" > "$output_dir/afp_targets.txt"
         if [[ -s "$output_dir/afp_targets.txt" ]]; then
             echo -e "${GREEN}Starting AFP Server Information Disclosure scan.${NC}"
             while IFS= read -r target_ip; do
@@ -186,8 +186,16 @@ run_metasploit_scans() {
 
     if [[ -s "$output_dir/nmap/NTP.gnmap" ]]; then
         mkdir -p "$output_dir/msfntp"
-        awk '/^Host: / && /Ports:.*123\/open/ {print $2}' "$output_dir/nmap/NTP.gnmap" > "$output_dir/ntp_targets.txt"
-        if [[ -s "$output_dir/ntp_targets.txt" ]]; then
+        awk '/^Host: / && /Ports:.*123\/open\// {print $2}' "$output_dir/nmap/NTP.gnmap" > "$output_dir/ntp_targets.txt"
+        if [[ -s "$output_dir/ntp_targets.txt" ]] && ! opt_true ntp_dos; then
+            # ntp_peer_list_dos can disrupt the time service it is pointed at.
+            # Before greppable output included UDP results this module never had
+            # targets, so it never ran; it is opt-in rather than newly armed.
+            echo -e "${YELLOW}Skipping NTP module: auxiliary/scanner/ntp/ntp_peer_list_dos can${NC}"
+            echo -e "${YELLOW}disrupt the target's time service. Re-run with --ntp-dos to enable it.${NC}"
+            echo -e "${YELLOW}Hosts that would be targeted: $(grep -c . "$output_dir/ntp_targets.txt")${NC}"
+            echo
+        elif [[ -s "$output_dir/ntp_targets.txt" ]]; then
             echo -e "${GREEN}Starting NTP Amplification Attack.${NC}"
             while IFS= read -r target_ip; do
                 if step_completed "msf:ntp:$target_ip"; then
@@ -211,7 +219,7 @@ run_metasploit_scans() {
 
     if [[ -s "$output_dir/nmap/SNMP.gnmap" ]]; then
         mkdir -p "$output_dir/msfsnmp"
-        awk '/^Host: / && /Ports:.*161\/open/ {print $2}' "$output_dir/nmap/SNMP.gnmap" > "$output_dir/snmp_targets.txt"
+        awk '/^Host: / && /Ports:.*161\/open\// {print $2}' "$output_dir/nmap/SNMP.gnmap" > "$output_dir/snmp_targets.txt"
         if [[ -s "$output_dir/snmp_targets.txt" ]]; then
             echo -e "${GREEN}Starting SNMP Information Disclosure scan.${NC}"
             while IFS= read -r target_ip; do
@@ -236,7 +244,7 @@ run_metasploit_scans() {
 
     if [[ -s "$output_dir/nmap/Kerberos.gnmap" ]]; then
         mkdir -p "$output_dir/msfkerberos"
-        awk '/^Host: / && /Ports:.*88\/open/ {print $2}' "$output_dir/nmap/Kerberos.gnmap" > "$output_dir/kerberos_targets.txt"
+        awk '/^Host: / && /Ports:.*88\/open\// {print $2}' "$output_dir/nmap/Kerberos.gnmap" > "$output_dir/kerberos_targets.txt"
         if [[ -s "$output_dir/kerberos_targets.txt" ]]; then
             local krb_domain
             local krb_userlist

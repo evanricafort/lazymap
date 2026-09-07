@@ -152,6 +152,19 @@ The module needs a realm and a username list on top of the target:
 `--domain` is also passed to the `krb5-enum-users` NSE script, which otherwise
 uses its default `test` realm.
 
+# Scan behaviour notes
+
+Each nmap module writes both normal and greppable output from a single scan.
+Earlier versions produced the greppable file with a second `nmap -sV -oG` run
+that had no `-p` and no `-v`: a silent version sweep of nmap's top 1000 ports
+against every live host, repeated for 13 modules. On a sizeable internal range
+that ran for a long time with no output at all and looked like the scan had
+frozen. All nmap scans also pass `--stats-every 30s`, so progress is printed
+while long scans run.
+
+The NTP Metasploit module (`ntp_peer_list_dos`) can disrupt the time service on
+the host it targets, so it is off by default and enabled with `--ntp-dos`.
+
 # Reports
 
 Every run produces `<output_dir>/lazymap_report.html`, including runs that find

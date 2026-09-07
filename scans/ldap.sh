@@ -8,7 +8,7 @@ run_ldap_scan() {
 
     if [[ -f "$output_dir/nmap/LDAP.gnmap" ]]; then
         local ldap_ports="389|636|3268|3269"
-        awk '/^Host: / && /Ports:.*('"$ldap_ports"')\/open/ {print $2}' "$output_dir/nmap/LDAP.gnmap" > "$output_dir/ldap_open_ports.txt"
+        awk '/^Host: / && /Ports:.*('"$ldap_ports"')\/open\// {print $2}' "$output_dir/nmap/LDAP.gnmap" > "$output_dir/ldap_open_ports.txt"
 
         if [[ -s "$output_dir/ldap_open_ports.txt" ]]; then
             mkdir -p "$output_dir/ldap_anonymous_bind"

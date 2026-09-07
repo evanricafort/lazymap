@@ -41,12 +41,12 @@ collect_mitm6_targets() {
     local ip
     while IFS= read -r ip; do
         [ -n "$ip" ] && echo "ldaps://$ip" >> "$out"
-    done < <(awk '/^Host: / && /Ports:.*636\/open/ {print $2}' "$gnmap" | sort -u)
+    done < <(awk '/^Host: / && /Ports:.*636\/open\// {print $2}' "$gnmap" | sort -u)
 
     if [ ! -s "$out" ]; then
         while IFS= read -r ip; do
             [ -n "$ip" ] && echo "ldap://$ip" >> "$out"
-        done < <(awk '/^Host: / && /Ports:.*389\/open/ {print $2}' "$gnmap" | sort -u)
+        done < <(awk '/^Host: / && /Ports:.*389\/open\// {print $2}' "$gnmap" | sort -u)
         [ -s "$out" ] && echo -e "${YELLOW}No LDAPS (636) hosts found; falling back to LDAP (389). Relaying may fail if signing is enforced.${NC}"
     fi
 }
