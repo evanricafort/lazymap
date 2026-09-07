@@ -15,7 +15,19 @@ run_live_host_check() {
     local temp_file="$output_dir/nmap/live_hosts_raw.txt"
     mkdir -p "$(dirname "$temp_file")"
 
-    nmap -sn -v --reason -oN "$temp_file" "${targets_array[@]}" >&2
+    # Watched like every other nmap scan. Its stdout is sent to stderr so the
+    # streamed progress cannot contaminate the host list this function prints.
+    local live="$output_dir/nmap/.live_discovery.log"
+    if ! opt_true nmap_watchdog_off; then
+        run_nmap_watched "$(nmap_stall_seconds)" "$live" \
+            -sn -v --reason --stats-every 30s -oN "$temp_file" "${targets_array[@]}" >&2
+        if [ $? -eq 124 ]; then
+            echo -e "${YELLOW}Host discovery stalled and was stopped; continuing with whatever it found.${NC}" >&2
+        fi
+        rm -f "$live"
+    else
+        nmap -sn -v --reason -oN "$temp_file" "${targets_array[@]}" >&2
+    fi
 
     local live_hosts=()
     while read -r ip; do

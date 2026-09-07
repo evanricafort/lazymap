@@ -89,6 +89,7 @@ run_metasploit_scans() {
         mkdir -p "$output_dir/msfrdp"
         awk '/^Host: / && /Ports:.*3389\/open\// {print $2}' "$output_dir/nmap/RDP.gnmap" > "$output_dir/rdp_targets.txt"
         if [[ -s "$output_dir/rdp_targets.txt" ]]; then
+            activity_begin "msf:rdp"
             echo -e "${GREEN}Starting RDP (Remote Desktop Protocol) scan.${NC}"
             while IFS= read -r target_ip; do
                 if step_completed "msf:rdp:$target_ip"; then
@@ -104,6 +105,7 @@ run_metasploit_scans() {
                 echo -e "${BLUE}RDP scan for $target_ip completed, results saved to $output_file${NC}"
                 echo
             done < "$output_dir/rdp_targets.txt"
+            activity_end
         else
             echo -e "${YELLOW}No RDP targets found. Skipping RDP Metasploit scan.${NC}"
             echo
@@ -114,6 +116,7 @@ run_metasploit_scans() {
         mkdir -p "$output_dir/msfrpc"
         awk '/^Host: / && /Ports:.*135\/open\// {print $2}' "$output_dir/nmap/RPC.gnmap" > "$output_dir/rpc_targets.txt"
         if [[ -s "$output_dir/rpc_targets.txt" ]]; then
+            activity_begin "msf:rpc"
             echo -e "${GREEN}Starting RPC (Remote Procedure Call) scan.${NC}"
             while IFS= read -r target_ip; do
                 if step_completed "msf:rpc:$target_ip"; then
@@ -129,6 +132,7 @@ run_metasploit_scans() {
                 echo -e "${BLUE}RPC scan for $target_ip completed, results saved to $output_file${NC}"
                 echo
             done < "$output_dir/rpc_targets.txt"
+            activity_end
         else
             echo -e "${YELLOW}No RPC targets found. Skipping RPC Metasploit scan.${NC}"
             echo
@@ -139,6 +143,7 @@ run_metasploit_scans() {
         mkdir -p "$output_dir/msforacletnscmd"
         awk '/^Host: / && /Ports:.*1521\/open\// {print $2}' "$output_dir/nmap/Oracle.gnmap" > "$output_dir/oracle_targets.txt"
         if [[ -s "$output_dir/oracle_targets.txt" ]]; then
+            activity_begin "msf:oracle"
             echo -e "${GREEN}Starting Oracle TNS Listener SID Enumeration scan.${NC}"
             while IFS= read -r target_ip; do
                 if step_completed "msf:oracle:$target_ip"; then
@@ -154,6 +159,7 @@ run_metasploit_scans() {
                 echo -e "${BLUE}Oracle TNS Listener SID Enumeration scan for $target_ip completed, results saved to $output_file${NC}"
                 echo
             done < "$output_dir/oracle_targets.txt"
+            activity_end
         else
             echo -e "${YELLOW}No Oracle TNS Listener targets found. Skipping Oracle Metasploit scan.${NC}"
             echo
@@ -164,6 +170,7 @@ run_metasploit_scans() {
         mkdir -p "$output_dir/msfafp"
         awk '/^Host: / && /Ports:.*548\/open\// {print $2}' "$output_dir/nmap/AFP.gnmap" > "$output_dir/afp_targets.txt"
         if [[ -s "$output_dir/afp_targets.txt" ]]; then
+            activity_begin "msf:afp"
             echo -e "${GREEN}Starting AFP Server Information Disclosure scan.${NC}"
             while IFS= read -r target_ip; do
                 if step_completed "msf:afp:$target_ip"; then
@@ -178,6 +185,7 @@ run_metasploit_scans() {
                 mark_completed "msf:afp:$target_ip"
                 echo -e "${BLUE}AFP Server Information Disclosure scan for $target_ip completed, results saved to $output_file${NC}"
             done < "$output_dir/afp_targets.txt"
+            activity_end
         else
             echo -e "${YELLOW}No AFP targets found. Skipping AFP Metasploit scan.${NC}"
             echo
@@ -196,6 +204,7 @@ run_metasploit_scans() {
             echo -e "${YELLOW}Hosts that would be targeted: $(grep -c . "$output_dir/ntp_targets.txt")${NC}"
             echo
         elif [[ -s "$output_dir/ntp_targets.txt" ]]; then
+            activity_begin "msf:ntp"
             echo -e "${GREEN}Starting NTP Amplification Attack.${NC}"
             while IFS= read -r target_ip; do
                 if step_completed "msf:ntp:$target_ip"; then
@@ -211,6 +220,7 @@ run_metasploit_scans() {
                 echo -e "${BLUE}NTP Amplification Attack for $target_ip completed, results saved to $output_file${NC}"
                 echo
             done < "$output_dir/ntp_targets.txt"
+            activity_end
         else
             echo -e "${YELLOW}No NTP targets found. Skipping NTP Metasploit scan.${NC}"
             echo
@@ -221,6 +231,7 @@ run_metasploit_scans() {
         mkdir -p "$output_dir/msfsnmp"
         awk '/^Host: / && /Ports:.*161\/open\// {print $2}' "$output_dir/nmap/SNMP.gnmap" > "$output_dir/snmp_targets.txt"
         if [[ -s "$output_dir/snmp_targets.txt" ]]; then
+            activity_begin "msf:snmp"
             echo -e "${GREEN}Starting SNMP Information Disclosure scan.${NC}"
             while IFS= read -r target_ip; do
                 if step_completed "msf:snmp:$target_ip"; then
@@ -236,6 +247,7 @@ run_metasploit_scans() {
                 echo -e "${BLUE}SNMP Information Disclosure scan for $target_ip completed, results saved to $output_file${NC}"
                 echo
             done < "$output_dir/snmp_targets.txt"
+            activity_end
         else
             echo -e "${YELLOW}No SNMP targets found. Skipping SNMP Metasploit scan.${NC}"
             echo
@@ -260,6 +272,7 @@ run_metasploit_scans() {
                 echo -e "${YELLOW}Skipping Kerberos Domain Username Enumeration. Re-run with --userlist <file>.${NC}"
                 echo
             else
+                activity_begin "msf:kerberos"
                 echo -e "${GREEN}Starting Kerberos Domain Username Enumeration scan.${NC}"
                 echo -e "${CYAN}  Domain    : $krb_domain${NC}"
                 echo -e "${CYAN}  User list : $krb_userlist${NC}"
@@ -280,6 +293,7 @@ run_metasploit_scans() {
                     echo -e "${BLUE}Kerberos Domain Username Enumeration for $target_ip completed, results saved to $output_file${NC}"
                     echo
                 done < "$output_dir/kerberos_targets.txt"
+                activity_end
             fi
         else
             echo -e "${YELLOW}No Kerberos targets found. Skipping Kerberos Metasploit scan.${NC}"

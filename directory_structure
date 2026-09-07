@@ -24,7 +24,8 @@
 │   ├── pret.sh - Installs PRET automatically and runs printer security checks.
 │   ├── smbv1.sh - SMBv1 detection using crackmapexec (or nxc).
 │   ├── unauthrpc.sh - Unauthenticated RPC (null session) enumeration using rpcclient.
-│   └── web.sh - Handles web and SSH related scans.
+│   ├── sslscan.sh - SSL/TLS configuration and cipher review using sslscan.
+│   └── sshaudit.sh - SSH server configuration audit using ssh-audit.
 ├── reports
     ├── html_report.sh - Generates an HTML report from overall scan results.
     └── send_discord_webhook.sh - Sends the zipped results to a Discord webhook.

@@ -5,6 +5,7 @@ source "$LAZYMAP_DIR/lib/colors.sh"
 run_dns_scan() {
     local output_dir=$1
     echo -e "${YELLOW}Starting DNS Vulnerabilities scan using 'dig +dnssec'.${NC}\n"
+    activity_begin "dns"
 
     if [[ -f "$output_dir/nmap/DNS.gnmap" ]]; then
         local ips_with_port_53_open=$(awk '/^Host: / && /Ports:.*53\/open\//{print $2}' "$output_dir/nmap/DNS.gnmap")
@@ -39,5 +40,6 @@ run_dns_scan() {
     else
         echo -e "${RED}DNS.gnmap not found. Skipping DNSSec scan.${NC}\n"
     fi
+    activity_end
     echo -e "${BLUE}DNS Vulnerabilities Scan Completed.${NC}\n"
 }

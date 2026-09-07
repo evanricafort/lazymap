@@ -5,6 +5,7 @@ source "$LAZYMAP_DIR/lib/colors.sh"
 run_ldap_scan() {
     local output_dir=$1
     echo -e "${YELLOW}Starting LDAP Anonymous Bind scan.${NC}\n"
+    activity_begin "ldap"
 
     if [[ -f "$output_dir/nmap/LDAP.gnmap" ]]; then
         local ldap_ports="389|636|3268|3269"
@@ -28,5 +29,6 @@ run_ldap_scan() {
     else
         echo -e "${RED}LDAP.gnmap not found. Skipping LDAP Anonymous Bind scan.${NC}\n"
     fi
+    activity_end
     echo -e "${BLUE}LDAP Anonymous Bind Scan Completed.${NC}\n"
 }

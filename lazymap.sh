@@ -24,7 +24,8 @@ source "$LAZYMAP_DIR/lib/installer.sh"
 source "$LAZYMAP_DIR/lib/help.sh"
 source "$LAZYMAP_DIR/lib/checks.sh"
 source "$LAZYMAP_DIR/scans/nmap.sh"
-source "$LAZYMAP_DIR/scans/web.sh"
+source "$LAZYMAP_DIR/scans/sslscan.sh"
+source "$LAZYMAP_DIR/scans/sshaudit.sh"
 source "$LAZYMAP_DIR/scans/metasploit.sh"
 source "$LAZYMAP_DIR/scans/smbv1.sh"
 source "$LAZYMAP_DIR/scans/unauthrpc.sh"
@@ -104,7 +105,7 @@ main() {
 
     build_resume_hint "$@"
 
-    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes,domain:,userlist:,mitm6,mitm6-interface:,mitm6-time:,ntp-dos,script-timeout:,host-timeout: -n "$0" -- "$@")
+    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes,domain:,userlist:,mitm6,mitm6-interface:,mitm6-time:,ntp-dos,script-timeout:,host-timeout:,nmap-stall:,no-nmap-watchdog -n "$0" -- "$@")
     if [ $? != 0 ]; then
         echo -e "${RED}Error: Failed to parse options.${NC}" >&2
         exit 1
@@ -137,6 +138,8 @@ main() {
             --domain ) opt_set kerberos_domain "$2"; shift 2 ;;
             --ntp-dos ) opt_set ntp_dos true; shift ;;
             --script-timeout ) opt_set script_timeout "$2"; shift 2 ;;
+            --nmap-stall ) opt_set nmap_stall "$2"; shift 2 ;;
+            --no-nmap-watchdog ) opt_set nmap_watchdog_off true; shift ;;
             --host-timeout ) opt_set host_timeout "$2"; shift 2 ;;
             --mitm6 ) opt_set mitm6 true; shift ;;
             --mitm6-interface ) opt_set mitm6_interface "$2"; shift 2 ;;
@@ -149,6 +152,18 @@ main() {
             * ) break ;;
         esac
     done
+
+    local nmap_stall_opt
+    nmap_stall_opt="$(opt_get nmap_stall)"
+    if [ -n "$nmap_stall_opt" ]; then
+        case "$nmap_stall_opt" in
+            ''|*[!0-9]*) echo -e "${RED}Error: --nmap-stall expects a whole number of seconds.${NC}"; exit 1 ;;
+        esac
+        if [ "$nmap_stall_opt" -lt 60 ]; then
+            echo -e "${RED}Error: --nmap-stall must be at least 60 seconds; a slow scan is not a stalled one.${NC}"
+            exit 1
+        fi
+    fi
 
     local mitm6_time
     mitm6_time="$(opt_get mitm6_duration)"
@@ -240,8 +255,16 @@ main() {
 
     run_nmap_scans "$output_dir"
 
+    # Launched here, once every nmap scan is done, so the poisoning window does
+    # not overlap the port scans. It runs detached while the checks below go on.
+    if opt_true mitm6; then
+        mitm6_start "$output_dir"
+    fi
+
     if ! opt_true exclude_web_scans; then
-        run_web_scans "$output_dir" "${TARGETS[@]}"
+        run_sslscan_scans "$output_dir"
+
+        run_sshaudit_scans "$output_dir"
     fi
 
     run_metasploit_scans "$output_dir"
@@ -254,12 +277,13 @@ main() {
 
     run_dns_scan "$output_dir"
 
-    if opt_true mitm6; then
-        run_step "mitm6" "IPv6 DNS takeover test" run_mitm6_scan "$output_dir"
-    fi
-
     if opt_true pret; then
         run_pret_scan "$output_dir"
+    fi
+
+    # Stop the background attack and fold its findings in before reporting.
+    if opt_true mitm6; then
+        mitm6_finish "$output_dir"
     fi
 
     finalise_reports

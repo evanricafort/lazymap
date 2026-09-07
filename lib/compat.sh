@@ -101,3 +101,22 @@ table_value() {
     printf '%s' "${1#*$LZ_TAB}"
 }
 
+
+# kill_tree <pid> - depth first, so grandchildren die before their parent is
+# reaped and reparented. "screen -X quit" alone leaves them running, which
+# previously left mitm6 poisoning the network after the scan had finished.
+kill_tree() {
+    local pid="$1"
+    [ -n "$pid" ] || return 0
+    local child
+    for child in $(pgrep -P "$pid" 2>/dev/null); do
+        kill_tree "$child"
+    done
+    kill -TERM "$pid" 2>/dev/null
+    sleep 1
+    kill -KILL "$pid" 2>/dev/null
+    # Reap it, so the shell does not print an asynchronous "Terminated" notice.
+    wait "$pid" 2>/dev/null
+    return 0
+}
+

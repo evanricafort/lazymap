@@ -47,6 +47,223 @@ nmap_timeout_args() {
     printf '%s' "$args"
 }
 
+
+# ---------------------------------------------------------------------------
+# Per-scan watchdog
+#
+# --script-timeout bounds each script per host, so on a large scope a script
+# that stalls on every host can still hold a module up for hours. The watchdog
+# instead watches nmap's own progress: if the percentage stops advancing for
+# NMAP_STALL seconds (default 120) the scan is considered hung, killed, and retried with the
+# NSE scripts isolated one at a time so the offender can be identified and
+# dropped rather than taking the whole module down with it.
+# ---------------------------------------------------------------------------
+
+NMAP_STALL_DEFAULT=120
+
+nmap_stall_seconds() {
+    local v
+    v="$(opt_get nmap_stall)"
+    [ -z "$v" ] && v="$NMAP_STALL_DEFAULT"
+    printf '%s' "$v"
+}
+
+# nmap_args_drop_script <args> -> args with "--script <list>" removed,
+# keeping --script-args, which individual scripts may still need.
+nmap_args_drop_script() {
+    local out="" skip=0 tok
+    for tok in $1; do
+        if [ "$skip" = 1 ]; then skip=0; continue; fi
+        case "$tok" in
+            --script) skip=1; continue ;;
+            --script=*) continue ;;
+        esac
+        out="$out $tok"
+    done
+    printf '%s' "$out"
+}
+
+# nmap_args_drop_all_scripts <args> -> args with every NSE option removed.
+nmap_args_drop_all_scripts() {
+    local out="" skip=0 tok
+    for tok in $1; do
+        if [ "$skip" = 1 ]; then skip=0; continue; fi
+        case "$tok" in
+            --script|--script-args) skip=1; continue ;;
+            --script=*|--script-args=*) continue ;;
+        esac
+        out="$out $tok"
+    done
+    printf '%s' "$out"
+}
+
+# nmap_script_list <args> -> the NSE scripts named, one per line
+nmap_script_list() {
+    local take=0 tok
+    for tok in $1; do
+        if [ "$take" = 1 ]; then
+            printf '%s\n' "$tok" | tr ',' '\n'
+            take=0
+            continue
+        fi
+        [ "$tok" = "--script" ] && take=1
+    done
+}
+
+# run_nmap_watched <stall secs> <live log> <nmap args...>
+# Returns nmap's status, or 124 when the watchdog killed a stalled scan.
+run_nmap_watched() {
+    local stall="$1"
+    local live="$2"
+    shift 2
+
+    : > "$live"
+    rm -f "$live.rc"
+    # Disowned, with the exit status written to a file, so that killing a
+    # stalled scan does not make the shell print an asynchronous job notice
+    # in the middle of the scan output.
+    # The outer 2>/dev/null silences only the subshell's own job notice when a
+    # stalled nmap is killed; nmap's stderr is already captured into $live.
+    { nmap "$@" >> "$live" 2>&1; echo $? > "$live.rc"; } 2>/dev/null &
+    local npid=$!
+    disown 2>/dev/null || true
+
+    # Stream nmap's output to the console as it appears.
+    tail -f "$live" 2>/dev/null &
+    local tpid=$!
+    disown 2>/dev/null || true
+
+    local last_mark=""
+    local last_change
+    local now
+    local mark
+    last_change=$(date +%s)
+
+    local tick=0
+    while kill -0 "$npid" 2>/dev/null; do
+        # Liveness is polled every second so a quick scan is not held up; the
+        # progress check itself only needs to run every 15s.
+        sleep 1
+        tick=$(( tick + 1 ))
+        [ $(( tick % 15 )) -ne 0 ] && continue
+
+        # Progress percentage first; fall back to output size when nmap has not
+        # printed a timing line yet.
+        mark=$(grep -o 'About [0-9.]*% done' "$live" 2>/dev/null | tail -n1)
+        [ -z "$mark" ] && mark=$(wc -c < "$live" 2>/dev/null | tr -d ' ')
+        if [ "$mark" != "$last_mark" ]; then
+            last_mark="$mark"
+            last_change=$(date +%s)
+        else
+            now=$(date +%s)
+            if [ $(( now - last_change )) -ge "$stall" ]; then
+                kill "$tpid" 2>/dev/null
+                kill_tree "$npid"
+                rm -f "$live.rc"
+                return 124
+            fi
+        fi
+    done
+
+    sleep 1
+    kill "$tpid" 2>/dev/null
+    local rc=0
+    [ -f "$live.rc" ] && rc=$(cat "$live.rc" 2>/dev/null)
+    case "$rc" in ''|*[!0-9]*) rc=0 ;; esac
+    rm -f "$live.rc"
+    return "$rc"
+}
+
+# nmap_run_module <name> <args> <outfile> <gnmapfile> <targets> <timeout args>
+# Runs one nmap module under the watchdog, recovering from a stall.
+nmap_run_module() {
+    local script_name="$1"
+    local script_args="$2"
+    local outfile="$3"
+    local gnmapfile="$4"
+    local targets="$5"
+    local timeout_args="$6"
+
+    local dir
+    dir="$(dirname "$outfile")"
+    local live="$dir/.live_${script_name}.log"
+    local stall
+    stall="$(nmap_stall_seconds)"
+
+    if ! opt_true nmap_watchdog_off; then
+        run_nmap_watched "$stall" "$live" $script_args $timeout_args -v --reason \
+            --stats-every 30s -oN "$outfile" -oG "$gnmapfile" -iL "$targets"
+        local rc=$?
+        if [ "$rc" -ne 124 ]; then
+            rm -f "$live"
+            return "$rc"
+        fi
+    else
+        nmap $script_args $timeout_args -v --reason --stats-every 30s \
+            -oN "$outfile" -oG "$gnmapfile" -iL "$targets"
+        return $?
+    fi
+
+    # --- stalled ---
+    local scripts_used
+    scripts_used="$(nmap_script_list "$script_args" | grep -c . )"
+    echo
+    echo -e "${RED}======================================================${NC}"
+    echo -e "${RED}${script_name} scan stalled: no progress for ${stall}s. Killed.${NC}"
+    echo -e "${RED}======================================================${NC}"
+
+    if [ "$scripts_used" -eq 0 ]; then
+        echo -e "${YELLOW}No NSE scripts in this module, so the stall is not script related.${NC}"
+        echo -e "${YELLOW}Partial output kept in ${outfile}.${NC}\n"
+        rm -f "$live"
+        return 0
+    fi
+
+    # A plain port scan first, so the greppable file the later checks read is
+    # produced even if every script has to be dropped.
+    echo -e "${YELLOW}Re-running ${script_name} without NSE to secure the port results...${NC}"
+    local base
+    base="$(nmap_args_drop_all_scripts "$script_args")"
+    run_nmap_watched "$stall" "$live" $base $timeout_args -v --reason \
+        --stats-every 30s -oN "$outfile" -oG "$gnmapfile" -iL "$targets"
+
+    # Then each script on its own, so one bad script cannot hide the others.
+    echo -e "${YELLOW}Isolating the NSE scripts one at a time to find the culprit...${NC}\n"
+    local keep
+    keep="$(nmap_args_drop_script "$script_args")"
+    local hung_log="$dir/hung_scripts.txt"
+    local s_name part
+    for s_name in $(nmap_script_list "$script_args"); do
+        [ -z "$s_name" ] && continue
+        part="$dir/.part_${script_name}_${s_name}.txt"
+        echo -e "${GREEN}  → ${script_name}: trying script '${s_name}'${NC}"
+        run_nmap_watched "$stall" "$live" $keep --script "$s_name" $timeout_args \
+            -v --reason --stats-every 30s -oN "$part" -iL "$targets"
+        if [ $? -eq 124 ]; then
+            echo -e "${RED}  ✗ '${s_name}' stalled again and was dropped from ${script_name}.${NC}"
+            printf '%s\t%s\n' "$script_name" "$s_name" >> "$hung_log"
+            rm -f "$part"
+        else
+            echo -e "${GREEN}  ✓ '${s_name}' completed.${NC}"
+            {
+                echo
+                echo "# ---- ${script_name}: ${s_name} (run in isolation after a stall) ----"
+                cat "$part"
+            } >> "$outfile"
+            rm -f "$part"
+        fi
+    done
+
+    rm -f "$live"
+    if [ -s "$hung_log" ]; then
+        echo
+        echo -e "${YELLOW}Scripts dropped so far (see ${hung_log}):${NC}"
+        sed 's/\t/: /; s/^/    /' "$hung_log"
+        echo
+    fi
+    return 0
+}
+
 run_nmap_scans() {
     local output_dir="$1"
 
@@ -62,7 +279,7 @@ run_nmap_scans() {
     table_add scripts "Oracle" '-sV --script oracle-tns-version,oracle-sid-brute -p 1521'
     table_add scripts "NTP" '-sU -sV --script ntp-monlist,ntp-info -p 123'
     table_add scripts "SNMP" '-sV --script snmp-brute,snmp-info -p161 -vvv'
-    table_add scripts "LDAP" '-sV --script ldap*,ldap-search,ldap-novell-getpass -p 389,636,3268,3269'
+    table_add scripts "LDAP" '-sV --script ldap-rootdse,ldap-search,ldap-novell-getpass -p 389,636,3268,3269'
     table_add scripts "HTTP" '-sV -p 80,81,443,8000,8080,8443 --script http-methods,http-headers,http-iis-webdav-vuln,http-auth-finder,http-apache-server-status,http-traceroute,http-trace,http-vuln*,http-axis2-dir-traversal,http-cross-domain-policy --script-args http-cross-domain-policy.domain-lookup=true'
     table_add scripts "Portmapper" '-sSUC --script nfs-showmount -p111'
     table_add scripts "MySQL" '-sV -p 3306 --script mysql-audit,mysql-databases,mysql-dump-hashes,mysql-empty-password,mysql-enum,mysql-info,mysql-query,mysql-users,mysql-variables,mysql-vuln-cve2012-2122'
@@ -89,7 +306,7 @@ run_nmap_scans() {
     local krb_realm
     krb_realm="$(opt_get kerberos_domain)"
     [ -z "$krb_realm" ] && krb_realm="test"
-    table_add scripts "Kerberos" "--script krb5-enum-users --script-args krb5-enum-users.realm='$krb_realm' -p 88"
+    table_add scripts "Kerberos" '-sV -p 88'
     table_add scripts "PJL" '--script pjl-ready-message.nse --script-args '"'"'pjl_ready_message="pwn3d!"'"'"' -p 9100'
     table_add scripts "Redis" '--script redis-info,redis-brute -p 6379'
     table_add scripts "RealVNC" '--script realvnc-auth-bypass -p 5900'
@@ -97,6 +314,12 @@ run_nmap_scans() {
     table_add scripts "TCP" '-sC -sV'
     table_add scripts "UDP" '-sC -sU'
     table_add scripts "AllPorts" '-p-'
+
+    # Brute-force scripts are slow and noisy, so they are declared last and run
+    # only once every other nmap module has finished.
+    BRUTE_MODULES="LDAPBrute KerberosBrute"
+    table_add scripts "LDAPBrute" '--script ldap-brute -p 389,636,3268,3269'
+    table_add scripts "KerberosBrute" "--script krb5-enum-users --script-args krb5-enum-users.realm='$krb_realm' -p 88"
 
     local excluded=""
     if opt_true exclude_udp; then
@@ -157,6 +380,7 @@ run_nmap_scans() {
         scripts=("${rebuilt[@]}")
     fi
 
+    local brute_banner=""
     local timeout_args
     timeout_args="$(nmap_timeout_args)"
     if [ -n "$timeout_args" ]; then
@@ -176,6 +400,17 @@ run_nmap_scans() {
             continue
         fi
 
+        case " $BRUTE_MODULES " in
+            *" $script_name "*)
+                if [ "$brute_banner" != shown ]; then
+                    brute_banner=shown
+                    echo -e "${BLUE}======================================================${NC}"
+                    echo -e "${BLUE}All other nmap scans finished. Starting brute-force scans.${NC}"
+                    echo -e "${BLUE}======================================================${NC}\n"
+                fi ;;
+        esac
+
+        activity_begin "nmap:$script_name"
         echo -e "${GREEN}Starting ${script_name} scan.${NC}"
 
         nmap_output_file="$output_dir/nmap/${script_name}.txt"
@@ -184,12 +419,11 @@ run_nmap_scans() {
         # a second "nmap -sV -oG" run with no -p and no -v: a silent top-1000
         # port version sweep of every live host, repeated for 13 modules, which
         # ignored -n/-T4/--min-rate and looked like the scan had hung.
-        nmap $script_args $timeout_args -v --reason --stats-every 30s \
-            -oN "$nmap_output_file" \
-            -oG "$output_dir/nmap/${script_name}.gnmap" \
-            -iL "$targets_file"
+        nmap_run_module "$script_name" "$script_args" "$nmap_output_file" \
+            "$output_dir/nmap/${script_name}.gnmap" "$targets_file" "$timeout_args"
 
         mark_completed "nmap:$script_name"
+        activity_end
         echo -e "${GREEN}Completed ${script_name} scan. Output saved to ${nmap_output_file}.${NC}\n"
     done
 
@@ -240,14 +474,20 @@ run_firewall_evasion_scans() {
             continue
         fi
 
+        activity_begin "fw:$script_name"
         echo -e "${GREEN}Starting scan for ${script_name}.${NC}"
 
         nmap_output_file="$output_dir/nmap/firewall_evasion/${script_name}.txt"
         mkdir -p "$(dirname "$nmap_output_file")"
 
-        nmap $script_args $timeout_args -v --reason --stats-every 30s -oN "$nmap_output_file" -iL "$targets_file"
+        # Same watchdog as the main modules: a stalled evasion scan is killed
+        # and, if it uses NSE, the offending script is isolated and dropped.
+        nmap_run_module "$script_name" "$script_args" "$nmap_output_file" \
+            "$output_dir/nmap/firewall_evasion/${script_name}.gnmap" \
+            "$targets_file" "$timeout_args"
 
         mark_completed "fw:$script_name"
+        activity_end
         echo -e "${GREEN}Completed ${script_name} scan.${NC}\n"
     done
 }

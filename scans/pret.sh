@@ -58,6 +58,7 @@ run_pret_scan() {
         return 0
     fi
 
+    activity_begin "pret"
     local cmdfile="$output_dir/pret/pret_commands.txt"
     printf '%s\n' "$PRET_COMMANDS" > "$cmdfile"
 
@@ -81,5 +82,6 @@ run_pret_scan() {
         echo -e "\n--------------------------------\n"
     done < "$targets"
 
+    activity_end
     echo -e "${BLUE}Printer security check completed.${NC}\n"
 }

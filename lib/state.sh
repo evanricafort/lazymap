@@ -8,8 +8,24 @@
 
 STATE_FILE=""
 RESUME_MODE=false
+# Prefixes of the activity currently running. On an interrupt every completion
+# recorded under them is discarded, so the activity restarts from the beginning
+# next time rather than resuming half way through.
+CURRENT_ACTIVITY=""
 INTERRUPTED=false
 SKIPPED_STEPS=0
+
+# count_lines_matching <pattern> <file> -> always a bare integer.
+# "grep -c" exits 1 when the count is zero, so the common
+# "grep -c ... || echo 0" idiom prints "0" twice and breaks arithmetic.
+count_lines_matching() {
+    local n
+    n=$(grep -c "$1" "$2" 2>/dev/null)
+    case "$n" in
+        ''|*[!0-9]*) n=0 ;;
+    esac
+    printf '%s' "$n"
+}
 
 # Human readable elapsed time since $start_time.
 elapsed_runtime() {
@@ -43,7 +59,7 @@ state_init() {
             : > "$STATE_FILE"
         else
             local done_count
-            done_count=$(grep -c '^done:' "$STATE_FILE" 2>/dev/null || echo 0)
+            done_count=$(count_lines_matching '^done:' "$STATE_FILE")
             echo -e "${BLUE}======================================================${NC}"
             echo -e "${GREEN}Resuming previous scan${NC}"
             echo -e "${CYAN}State file : ${STATE_FILE}${NC}"
@@ -59,6 +75,40 @@ state_init() {
     fi
 
     printf 'started:%s\n' "$start_date" >> "$STATE_FILE"
+}
+
+# activity_begin <prefix>...  - marks an activity as in progress
+activity_begin() {
+    CURRENT_ACTIVITY="$*"
+}
+
+activity_end() {
+    CURRENT_ACTIVITY=""
+}
+
+# Drops every completion belonging to the interrupted activity so that the
+# whole activity, not just the item that was running, repeats on --resume.
+purge_current_activity() {
+    [ -n "$CURRENT_ACTIVITY" ] || return 0
+    [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || return 0
+
+    local prefix
+    local removed=0
+    for prefix in $CURRENT_ACTIVITY; do
+        local before
+        local after
+        before=$(count_lines_matching "^done:${prefix}" "$STATE_FILE")
+        [ "$before" -eq 0 ] && continue
+        grep -v "^done:${prefix}" "$STATE_FILE" > "$STATE_FILE.tmp" 2>/dev/null && mv "$STATE_FILE.tmp" "$STATE_FILE"
+        after=$(count_lines_matching "^done:${prefix}" "$STATE_FILE")
+        removed=$(( removed + before - after ))
+    done
+
+    if [ "$removed" -gt 0 ]; then
+        echo -e "${CYAN}Discarded ${removed} partial result(s) for the interrupted activity${NC}"
+        echo -e "${CYAN}(${CURRENT_ACTIVITY}); it will run again in full on --resume.${NC}"
+    fi
+    CURRENT_ACTIVITY=""
 }
 
 # step_completed <key> -> 0 if the step already finished in a previous run
@@ -89,8 +139,10 @@ run_step() {
         skip_notice "$key" "$label"
         return 0
     fi
+    activity_begin "$key"
     "$@"
     local rc=$?
+    activity_end
     if [[ "$INTERRUPTED" == true ]]; then
         return "$rc"
     fi
@@ -108,6 +160,8 @@ handle_interrupt() {
     trap - INT TERM
 
     echo
+    purge_current_activity
+
     echo -e "\n${BLUE}======================================================${NC}"
     echo -e "${YELLOW}⚠  Scan Interrupted (SIG${sig}) ⚠${NC}"
     echo -e "${BLUE}======================================================${NC}"
@@ -116,7 +170,7 @@ handle_interrupt() {
     echo -e "${CYAN}Interrupted at               : $(date)${NC}"
     if [[ -n "$STATE_FILE" && -f "$STATE_FILE" ]]; then
         local done_count
-        done_count=$(grep -c '^done:' "$STATE_FILE" 2>/dev/null || echo 0)
+        done_count=$(count_lines_matching '^done:' "$STATE_FILE")
         echo -e "${CYAN}Completed steps saved        : ${done_count}${NC}"
     fi
     echo -e "${CYAN}Partial output directory     : ${output_dir}${NC}"
@@ -125,6 +179,12 @@ handle_interrupt() {
     echo -e "command with --resume and the same output directory:${NC}"
     echo -e "  ${YELLOW}${RESUME_HINT}${NC}"
     echo -e "${BLUE}======================================================${NC}\n"
+
+    # An attack running in a detached screen session outlives this process, so
+    # it has to be stopped explicitly before anything else.
+    if type mitm6_emergency_stop >/dev/null 2>&1; then
+        mitm6_emergency_stop
+    fi
 
     # Stop child processes this script started (nmap, sslscan, ssh-audit, ...).
     pkill -TERM -P $$ 2>/dev/null
