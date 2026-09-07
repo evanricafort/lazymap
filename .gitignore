@@ -1,1 +1,13 @@
+# PRET is cloned at runtime, not vendored
 pret_tool/
+
+# Scan output. Engagement data must never be committed to this repo:
+# the default output directory, plus the files and directories a run creates.
+results/
+*.gnmap
+lazymap_report.html
+live_hosts.txt
+.lazymap_state
+
+# macOS
+.DS_Store
