@@ -18,6 +18,7 @@ discord_webhook=""
 RESUME_HINT="sudo ./lazymap.sh --resume"
 
 source "$LAZYMAP_DIR/lib/compat.sh"
+source "$LAZYMAP_DIR/lib/args.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
 source "$LAZYMAP_DIR/lib/state.sh"
 source "$LAZYMAP_DIR/lib/installer.sh"
@@ -96,21 +97,13 @@ print_completion_summary() {
 main() {
     display_ascii_art
 
-    # GNU getopt is required for the long options below.
-    getopt --test >/dev/null 2>&1
-    if [[ $? -ne 4 ]]; then
-        echo -e "${RED}Error: GNU getopt is required (install 'util-linux', or on macOS 'brew install gnu-getopt').${NC}" >&2
-        exit 1
-    fi
-
     build_resume_hint "$@"
 
-    TEMP=$(getopt -o t:u:1234ankhbo:y --long pret,interface:,help,exclude-udp,discord,resume,install-deps,yes,domain:,userlist:,mitm6,mitm6-interface:,mitm6-time:,ntp-dos,script-timeout:,host-timeout:,nmap-stall:,no-nmap-watchdog -n "$0" -- "$@")
-    if [ $? != 0 ]; then
-        echo -e "${RED}Error: Failed to parse options.${NC}" >&2
-        exit 1
-    fi
-    eval set -- "$TEMP"
+    # Options are parsed in lib/args.sh rather than by getopt: macOS ships a
+    # BSD getopt with no long option support, and Homebrew's gnu-getopt is
+    # keg-only, so it is missing from the PATH sudo hands to this script.
+    normalize_args "$@"
+    set -- ${LZ_ARGS[@]+"${LZ_ARGS[@]}"}
 
     while true; do
         case "$1" in
