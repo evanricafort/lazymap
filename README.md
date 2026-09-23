@@ -96,6 +96,15 @@ not answer a ping is still scanned.
 Use `-u` for one target and `-t` for a file of them; blank lines and `#`
 comments in the file are ignored.
 
+Before the sweep starts, lazymap prints what it is about to scan: how many
+entries were given, how many of them are subnets or ranges, the total number of
+addresses that adds up to, and the largest subnets listed biggest first. A
+single `/16` hidden in a long target file is 65,536 addresses, so it is worth
+seeing before the sweep rather than after it has run for an hour.
+
+Once discovery finishes, the number of live hosts is printed before the nmap
+phase begins.
+
 # Printer Security Check (PRET)
 
 `--pret` sets PRET up automatically before the scan starts - it is cloned into

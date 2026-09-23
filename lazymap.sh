@@ -62,6 +62,125 @@ finalise_reports() {
     fi
 }
 
+# Printed before live host discovery starts, so the scope being swept - how
+# many entries were given, how many of them are subnets or ranges, and how many
+# addresses that adds up to - is stated up front rather than inferred from how
+# long the sweep takes.
+announce_targets() {
+    local entries=${#TARGETS[@]}
+    local subnets=0 ranges=0 singles=0 names=0 total=0 unknown=0
+    local t n
+
+    for t in ${TARGETS[@]+"${TARGETS[@]}"}; do
+        n=$(target_address_count "$t")
+        case "$t" in
+            */*) subnets=$(( subnets + 1 )) ;;
+            *)
+                if target_is_multi "$t"; then
+                    ranges=$(( ranges + 1 ))
+                elif [ "$n" -eq 0 ]; then
+                    names=$(( names + 1 ))
+                else
+                    singles=$(( singles + 1 ))
+                fi
+                ;;
+        esac
+        if [ "$n" -eq 0 ]; then
+            unknown=$(( unknown + 1 ))
+        else
+            total=$(( total + n ))
+        fi
+    done
+
+    echo -e "\n${BLUE}======================================================${NC}"
+    if [ "$entries" -eq 1 ]; then
+        echo -e "${GREEN}Targets: 1 entry${NC}"
+    else
+        echo -e "${GREEN}Targets: ${entries} entries${NC}"
+    fi
+    echo -e "${BLUE}======================================================${NC}"
+    [ "$subnets" -gt 0 ] && echo -e "${CYAN}  Subnets (CIDR)   : ${subnets}${NC}"
+    [ "$ranges"  -gt 0 ] && echo -e "${CYAN}  Ranges/wildcards : ${ranges}${NC}"
+    [ "$singles" -gt 0 ] && echo -e "${CYAN}  Single addresses : ${singles}${NC}"
+    [ "$names"   -gt 0 ] && echo -e "${CYAN}  Hostnames        : ${names}${NC}"
+
+    if [ "$total" -gt 0 ]; then
+        if [ "$unknown" -gt 0 ]; then
+            echo -e "${CYAN}  Addresses to sweep: ${total} (+${unknown} resolved at scan time)${NC}"
+        else
+            echo -e "${CYAN}  Addresses to sweep: ${total}${NC}"
+        fi
+    fi
+
+    # The largest subnets and ranges are listed, biggest first: one stray /16 in
+    # a long target file is the difference between a ten minute sweep and an
+    # overnight one, and it is what the operator needs to see.
+    if [ $(( subnets + ranges )) -gt 0 ]; then
+        local listing=""
+        for t in ${TARGETS[@]+"${TARGETS[@]}"}; do
+            if target_is_multi "$t"; then
+                n=$(target_address_count "$t")
+                listing="$listing$n $t
+"
+            fi
+        done
+
+        echo -e "${BLUE}------------------------------------------------------${NC}"
+        local shown=0 spec size
+        while read -r size spec; do
+            [ -n "$spec" ] || continue
+            if [ "$size" -gt 0 ]; then
+                echo -e "${CYAN}  ${spec} (${size} addresses)${NC}"
+            else
+                echo -e "${CYAN}  ${spec}${NC}"
+            fi
+            shown=$(( shown + 1 ))
+        done < <(printf '%s' "$listing" | sort -rn | head -10)
+
+        local multi=$(( subnets + ranges ))
+        if [ "$multi" -gt "$shown" ]; then
+            echo -e "${CYAN}  ... and $(( multi - shown )) more${NC}"
+        fi
+    fi
+    echo -e "${BLUE}======================================================${NC}\n"
+}
+
+# Printed once the live host list is final - after discovery, after a single
+# target is taken as-is, and after a resume reuses the previous list - so the
+# number of hosts the nmap phase is about to run against is always stated
+# before it starts.
+announce_live_hosts() {
+    local live_hosts_file="$output_dir/live_hosts.txt"
+    local count
+    count=$(count_lines_matching . "$live_hosts_file")
+
+    echo -e "\n${BLUE}======================================================${NC}"
+    if [[ "$count" -eq 1 ]]; then
+        echo -e "${GREEN}Live hosts: 1${NC}"
+    else
+        echo -e "${GREEN}Live hosts: ${count}${NC}"
+    fi
+    echo -e "${BLUE}======================================================${NC}"
+
+    # A long list is summarised rather than scrolling the nmap banner away.
+    if [[ "$count" -le 20 ]]; then
+        while read -r host; do
+            [ -n "$host" ] && echo -e "${CYAN}  ${host}${NC}"
+        done < "$live_hosts_file"
+    else
+        local shown=0
+        while read -r host; do
+            [ -n "$host" ] || continue
+            echo -e "${CYAN}  ${host}${NC}"
+            shown=$(( shown + 1 ))
+            [ "$shown" -ge 10 ] && break
+        done < "$live_hosts_file"
+        echo -e "${CYAN}  ... and $(( count - 10 )) more (full list: ${live_hosts_file})${NC}"
+    fi
+    echo -e "${BLUE}======================================================${NC}"
+    echo -e "${YELLOW}Starting nmap scans against ${count} host(s).${NC}\n"
+}
+
 check_for_live_hosts_and_exit() {
     local live_hosts_file="$output_dir/live_hosts.txt"
     if [[ ! -s "$live_hosts_file" ]]; then
@@ -231,6 +350,8 @@ main() {
         run_responder "$(opt_get responder_interface)" "$output_dir" &
     fi
 
+    announce_targets
+
     if [[ "${#TARGETS[@]}" -gt 1 ]] || target_is_multi "${TARGETS[0]}"; then
       run_live_host_scans
     else
@@ -238,6 +359,8 @@ main() {
     fi
 
     check_for_live_hosts_and_exit
+
+    announce_live_hosts
 
     if opt_true firewall_evasion; then
         echo -e "${YELLOW}Starting Firewall Evasion Scans.${NC}\n"

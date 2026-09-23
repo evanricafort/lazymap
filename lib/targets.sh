@@ -56,3 +56,72 @@ target_is_multi() {
     esac
     return 1
 }
+
+# lz_octet_count <octet spec>
+# How many values one octet of a target spec covers: "*" is 256, "1-50" is 50,
+# "1,5,9" is 3, a plain number is 1. Returns 0 for anything unparseable so the
+# caller can fall back rather than print a wrong total.
+lz_octet_count() {
+    local spec="$1" part total=0 lo hi
+    case "$spec" in
+        '*') echo 256; return 0 ;;
+    esac
+    # Globbing off: an unquoted split of "10.0.0.*" would otherwise expand the
+    # wildcard against the working directory.
+    local reset_glob=""
+    case "$-" in *f*) ;; *) reset_glob=1; set -f ;; esac
+    local IFS=,
+    for part in $spec; do
+        case "$part" in
+            *-*)
+                lo="${part%%-*}"; hi="${part##*-}"
+                case "$lo$hi" in ''|*[!0-9]*) [ -n "$reset_glob" ] && set +f; echo 0; return 0 ;; esac
+                [ "$hi" -lt "$lo" ] && { [ -n "$reset_glob" ] && set +f; echo 0; return 0; }
+                total=$(( total + hi - lo + 1 ))
+                ;;
+            '')  [ -n "$reset_glob" ] && set +f; echo 0; return 0 ;;
+            *[!0-9]*) [ -n "$reset_glob" ] && set +f; echo 0; return 0 ;;
+            *)   total=$(( total + 1 )) ;;
+        esac
+    done
+    [ -n "$reset_glob" ] && set +f
+    echo "$total"
+}
+
+# target_address_count <target>
+# Addresses a target spec covers, or 0 when it cannot be determined (a
+# hostname, or a spec this cannot parse). CIDR is 2^(32-prefix); an octet spec
+# is the product of its four octet counts.
+target_address_count() {
+    local t="$1" prefix bits count=1 o
+    case "$t" in
+        */*)
+            prefix="${t##*/}"
+            case "$prefix" in ''|*[!0-9]*) echo 0; return 0 ;; esac
+            [ "$prefix" -gt 32 ] && { echo 0; return 0; }
+            bits=$(( 32 - prefix ))
+            # 2^bits without arithmetic overflow concerns for /0 .. /32.
+            count=1
+            while [ "$bits" -gt 0 ]; do count=$(( count * 2 )); bits=$(( bits - 1 )); done
+            echo "$count"
+            return 0
+            ;;
+    esac
+    case "$t" in
+        *[!0-9.*,-]*) echo 0; return 0 ;;   # hostname
+    esac
+    local reset_glob2=""
+    case "$-" in *f*) ;; *) reset_glob2=1; set -f ;; esac
+    local IFS=.
+    local n=0
+    for o in $t; do
+        local c
+        c=$(lz_octet_count "$o")
+        [ "$c" -eq 0 ] && { [ -n "$reset_glob2" ] && set +f; echo 0; return 0; }
+        count=$(( count * c ))
+        n=$(( n + 1 ))
+    done
+    [ -n "$reset_glob2" ] && set +f
+    [ "$n" -ne 4 ] && { echo 0; return 0; }
+    echo "$count"
+}
