@@ -66,6 +66,18 @@ lz_resolve_long() {
     return 1
 }
 
+# An option argument that is itself an option is almost always a forgotten
+# value ("--host-timeout -o scan" silently makes the timeout "-o" and drops
+# the output directory). Catch it here instead of letting the scan run for an
+# hour with the wrong settings.
+lz_looks_like_option() {
+    case "$1" in
+        -|--) return 1 ;;
+        -*)   return 0 ;;
+    esac
+    return 1
+}
+
 lz_arg_error() {
     echo -e "${RED}Error: $1${NC}" >&2
     echo -e "${RED}Run '$(basename "$0") -h' for usage.${NC}" >&2
@@ -114,6 +126,9 @@ normalize_args() {
                     if [ $# -lt 2 ]; then
                         lz_arg_error "option '--$full' requires an argument"
                     fi
+                    if lz_looks_like_option "$2"; then
+                        lz_arg_error "option '--$full' requires an argument, but got '$2'"
+                    fi
                     arr_push LZ_ARGS "--$full" "$2"
                     shift 2
                 else
@@ -134,6 +149,9 @@ normalize_args() {
                         else
                             if [ $# -lt 2 ]; then
                                 lz_arg_error "option '-$c' requires an argument"
+                            fi
+                            if lz_looks_like_option "$2"; then
+                                lz_arg_error "option '-$c' requires an argument, but got '$2'"
                             fi
                             arr_push LZ_ARGS "-$c" "$2"
                             shift

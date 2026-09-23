@@ -20,6 +20,7 @@ RESUME_HINT="sudo ./lazymap.sh --resume"
 source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/args.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
+source "$LAZYMAP_DIR/lib/targets.sh"
 source "$LAZYMAP_DIR/lib/state.sh"
 source "$LAZYMAP_DIR/lib/installer.sh"
 source "$LAZYMAP_DIR/lib/help.sh"
@@ -109,8 +110,11 @@ main() {
         case "$1" in
             -t ) targets_file=$2; shift 2 ;;
             -u )
-                if [[ "$2" == *","* || "$2" == *" "* || "$2" == *"/"* ]]; then
-                    echo -e "${RED}Error: -u option accepts only a single IP address or hostname.${NC}"
+                # A target spec covering several hosts is fine here: live host
+                # discovery expands it the same way it does for -t. Only a list
+                # of separate targets needs the file.
+                if [[ "$2" == *" "* ]]; then
+                    echo -e "${RED}Error: -u option accepts one target. Use -t with a file for a list.${NC}"
                     exit 1
                 fi
                 single_target=$2; shift 2 ;;
@@ -227,7 +231,7 @@ main() {
         run_responder "$(opt_get responder_interface)" "$output_dir" &
     fi
 
-    if [[ "${#TARGETS[@]}" -gt 1 ]] || [[ "${TARGETS[0]}" == *"/"* ]]; then
+    if [[ "${#TARGETS[@]}" -gt 1 ]] || target_is_multi "${TARGETS[0]}"; then
       run_live_host_scans
     else
       printf "%s\n" "${TARGETS[@]}" > "$output_dir/live_hosts.txt"

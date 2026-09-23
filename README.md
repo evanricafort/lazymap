@@ -73,6 +73,29 @@ git clone https://github.com/evanricafort/lazymap.git && cd lazymap && sudo chmo
 
 Note: Run in sudo mode to execute NMAP scripts related to UDP scan and Responder.
 
+## Target formats
+
+Both `-u` and the lines of a `-t` file accept any nmap target spec:
+
+| Form | Example |
+| --- | --- |
+| Single IP | `10.0.0.1` |
+| Hostname | `dc01.corp.example.com` |
+| CIDR | `10.0.0.0/24` |
+| Octet range | `10.0.0.1-50` |
+| Octet wildcard | `10.0.0.*` |
+| Octet list | `10.0.0.1,2,3` |
+| Combined | `10.0-1.0.1,5-9` |
+
+Anything covering more than one host is expanded by live host discovery before
+the per-host modules run, so Metasploit, LDAP, SSLScan, SSH-Audit, SMBv1 and the
+RPC check all iterate real addresses rather than the range string. A single IP
+or hostname is scanned directly without a discovery sweep, so a host that does
+not answer a ping is still scanned.
+
+Use `-u` for one target and `-t` for a file of them; blank lines and `#`
+comments in the file are ignored.
+
 # Printer Security Check (PRET)
 
 `--pret` sets PRET up automatically before the scan starts - it is cloned into

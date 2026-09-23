@@ -2,6 +2,7 @@
 
 source "$LAZYMAP_DIR/lib/compat.sh"
 source "$LAZYMAP_DIR/lib/colors.sh"
+source "$LAZYMAP_DIR/lib/targets.sh"
 
 # Discovers live hosts. Only the discovered IPs go to stdout - every status
 # message and the nmap output go to stderr so the caller can safely capture
@@ -57,7 +58,7 @@ run_live_host_scans() {
         needs_live_check=true
     else
         for target in "${TARGETS[@]}"; do
-            if [[ "$target" == *"/"* ]]; then
+            if target_is_multi "$target"; then
                 needs_live_check=true
                 break
             fi
