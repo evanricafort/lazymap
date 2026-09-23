@@ -126,11 +126,13 @@ run_nmap_watched() {
     # stalled nmap is killed; nmap's stderr is already captured into $live.
     { nmap "$@" >> "$live" 2>&1; echo $? > "$live.rc"; } 2>/dev/null &
     local npid=$!
+    watch_register "$npid"
     disown 2>/dev/null || true
 
     # Stream nmap's output to the console as it appears.
     tail -f "$live" 2>/dev/null &
     local tpid=$!
+    watch_register "$tpid"
     disown 2>/dev/null || true
 
     local last_mark=""
@@ -158,7 +160,9 @@ run_nmap_watched() {
             now=$(date +%s)
             if [ $(( now - last_change )) -ge "$stall" ]; then
                 kill "$tpid" 2>/dev/null
+                watch_unregister "$tpid"
                 kill_tree "$npid"
+                watch_unregister "$npid"
                 rm -f "$live.rc"
                 return 124
             fi
@@ -167,6 +171,8 @@ run_nmap_watched() {
 
     sleep 1
     kill "$tpid" 2>/dev/null
+    watch_unregister "$tpid"
+    watch_unregister "$npid"
     local rc=0
     [ -f "$live.rc" ] && rc=$(cat "$live.rc" 2>/dev/null)
     case "$rc" in ''|*[!0-9]*) rc=0 ;; esac

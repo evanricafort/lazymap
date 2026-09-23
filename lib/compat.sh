@@ -120,3 +120,46 @@ kill_tree() {
     return 0
 }
 
+
+# Background process registry.
+#
+# The watchdog runs nmap and a "tail -f" that streams its output as background
+# jobs, and host discovery itself runs inside a process substitution. Both are
+# therefore grandchildren of the main shell, which "pkill -P $$" does not
+# reach, and bash makes asynchronous commands in a non-interactive shell ignore
+# SIGINT - so Ctrl+C left the streaming tail running with no parent.
+#
+# The registry is a file rather than a variable because a subshell cannot write
+# back to its parent's environment. WATCH_PIDFILE is exported so every subshell
+# appends to the same list.
+watch_register() {
+    [ -n "$WATCH_PIDFILE" ] || return 0
+    [ -n "$1" ] || return 0
+    printf '%s\n' "$1" >> "$WATCH_PIDFILE" 2>/dev/null || true
+}
+
+# Drop a pid once it has been waited for, so a later reuse of that number by an
+# unrelated process is never signalled.
+watch_unregister() {
+    [ -n "$WATCH_PIDFILE" ] || return 0
+    [ -n "$1" ] || return 0
+    [ -f "$WATCH_PIDFILE" ] || return 0
+    local tmp="$WATCH_PIDFILE.$$"
+    grep -v -x "$1" "$WATCH_PIDFILE" > "$tmp" 2>/dev/null
+    mv -f "$tmp" "$WATCH_PIDFILE" 2>/dev/null || rm -f "$tmp"
+}
+
+watch_kill_all() {
+    [ -n "$WATCH_PIDFILE" ] || return 0
+    [ -f "$WATCH_PIDFILE" ] || return 0
+    local pid
+    while read -r pid; do
+        case "$pid" in ''|*[!0-9]*) continue ;; esac
+        if type kill_tree >/dev/null 2>&1; then
+            kill_tree "$pid"
+        else
+            kill -TERM "$pid" 2>/dev/null
+        fi
+    done < "$WATCH_PIDFILE"
+    : > "$WATCH_PIDFILE"
+}

@@ -53,6 +53,11 @@ state_init() {
     local dir="$1"
     STATE_FILE="$dir/.lazymap_state"
 
+    # Exported so the subshells that run the watchdog append to the same list.
+    WATCH_PIDFILE="$dir/.lazymap_watch_pids"
+    export WATCH_PIDFILE
+    : > "$WATCH_PIDFILE"
+
     if [[ "$RESUME_MODE" == true ]]; then
         if [[ ! -f "$STATE_FILE" ]]; then
             echo -e "${YELLOW}No previous state found in '$dir'. Starting a fresh scan.${NC}\n"
@@ -185,6 +190,10 @@ handle_interrupt() {
     if type mitm6_emergency_stop >/dev/null 2>&1; then
         mitm6_emergency_stop
     fi
+
+    # Background nmap and its output streamer first: they are grandchildren in
+    # a subshell, so the pkill below cannot see them.
+    watch_kill_all
 
     # Stop child processes this script started (nmap, sslscan, ssh-audit, ...).
     pkill -TERM -P $$ 2>/dev/null
