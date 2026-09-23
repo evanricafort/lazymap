@@ -1,6 +1,6 @@
 ```
  ████                                                                     
-░░███                                                                     v1.0
+░░███                                                                     v1.1
  ░███   ██████    █████████ █████ ████ █████████████    ██████   ████████ 
  ░███  ░░░░░███  ░█░░░░███ ░░███ ░███ ░░███░░███░░███  ░░░░░███ ░░███░░███
  ░███   ███████  ░   ███░   ░███ ░███  ░███ ░███ ░███   ███████  ░███ ░███
@@ -29,6 +29,9 @@ lazymap is a single command-line tool for network penetration testing. it combin
 - sslscan
 - ssh-audit
 - screen
+
+Note: lazymap has no GNU `getopt` dependency. Options are parsed in pure bash,
+so it works under `sudo` on macOS and anywhere only the BSD `getopt` is present.
 
 Note: CrackMapExec is now distributed as NetExec. lazymap uses `crackmapexec`
 when present and otherwise falls back to the `nxc` command, so either one
@@ -154,6 +157,17 @@ uses its default `test` realm.
 
 # Scan behaviour notes
 
+## Scan order
+
+Every nmap scan runs first and finishes before anything else starts. Only then
+do the remaining phases run, in this order: mitm6 (started in the background),
+SSLScan, SSH-Audit, Metasploit modules, SMBv1 check, unauthenticated RPC check,
+LDAP, DNS, PRET, and finally the mitm6 wrap-up and the report. Keeping the nmap
+phase contiguous means the target and port data every later module depends on is
+complete before those modules run.
+
+## nmap output and progress
+
 Each nmap module writes both normal and greppable output from a single scan.
 Earlier versions produced the greppable file with a second `nmap -sV -oG` run
 that had no `-p` and no `-v`: a silent version sweep of nmap's top 1000 ports
@@ -161,6 +175,32 @@ against every live host, repeated for 13 modules. On a sizeable internal range
 that ran for a long time with no output at all and looked like the scan had
 frozen. All nmap scans also pass `--stats-every 30s`, so progress is printed
 while long scans run.
+
+`--script-timeout` caps how long any single NSE script may run against a host
+(default `5m`, `0` disables it), and `--host-timeout` gives up on a host
+entirely after the given time (off by default).
+
+## Stall watchdog
+
+Every nmap scan is monitored. If a scan produces no progress for 120 seconds,
+lazymap treats it as stalled and isolates the cause rather than waiting forever
+or losing the whole module:
+
+1. The stalled scan is stopped.
+2. A plain port scan runs so the module still yields port data.
+3. Each NSE script from that module is retried on its own. The scripts that
+   complete are kept; only the script that stalls again is dropped.
+4. Dropped scripts are recorded in `<output_dir>/hung_scripts.txt`.
+
+So a single misbehaving NSE script costs you that script, not the scan. Tune
+the threshold with `--nmap-stall [seconds]`, or turn the whole mechanism off
+with `--no-nmap-watchdog`.
+
+## Background sessions
+
+Responder and mitm6 both run in detached `screen` sessions, so they capture
+traffic while the rest of the scan proceeds. lazymap tears down the session and
+its whole process tree when the phase ends or the run is interrupted.
 
 The NTP Metasploit module (`ntp_peer_list_dos`) can disrupt the time service on
 the host it targets, so it is off by default and enabled with `--ntp-dos`.
@@ -210,6 +250,10 @@ How it works:
 - Resume granularity is per step, not per run: each nmap script, each firewall
   evasion scan, each Metasploit module per host, each SSLScan / SSH-Audit /
   LDAP / DNS target, and the PRET check are tracked individually.
+- The activity that was running when the interrupt arrived is rolled back and
+  re-run in full on resume. If Ctrl+C lands in the middle of the LDAP scan, the
+  whole LDAP scan runs again rather than resuming from a half-written file. This
+  applies to every phase, not just LDAP.
 - Live host discovery is reused from the interrupted run, so the target list
   stays identical across the resume.
 - Without `--resume`, a run reuses the output directory but starts clean - old
